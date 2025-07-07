@@ -1,0 +1,597 @@
+// D3.js Infrastructure Visualization for FrizzlesRubric
+class InfrastructureVisualization {
+    constructor(containerId, data) {
+        this.container = d3.select(containerId);
+        this.data = data;
+        this.width = 1200;
+        this.height = 800;
+        this.margin = { top: 40, right: 40, bottom: 40, left: 40 };
+        
+        this.setupSVG();
+        this.setupScales();
+        this.calculatePositions();
+        this.renderVisualization();
+        this.setupInteractivity();
+    }
+    
+    setupSVG() {
+        this.svg = this.container
+            .append('svg')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('viewBox', `0 0 ${this.width} ${this.height}`)
+            .style('background', '#fafafa');
+            
+        // Define gradients and patterns
+        this.defs = this.svg.append('defs');
+        this.setupGradients();
+        this.setupFilters();
+        
+        // Create layer groups
+        this.layers = {
+            vpc: this.svg.append('g').attr('class', 'vpc-layer'),
+            subnets: this.svg.append('g').attr('class', 'subnets-layer'),
+            connections: this.svg.append('g').attr('class', 'connections-layer'),
+            securityGroups: this.svg.append('g').attr('class', 'security-groups-layer'),
+            instances: this.svg.append('g').attr('class', 'instances-layer'),
+            labels: this.svg.append('g').attr('class', 'labels-layer')
+        };
+    }
+    
+    setupGradients() {
+        // Depth gradient for 2.5D effect
+        const depthGradient = this.defs.append('linearGradient')
+            .attr('id', 'depth-gradient')
+            .attr('x1', '0%').attr('y1', '0%')
+            .attr('x2', '100%').attr('y2', '100%');
+            
+        depthGradient.append('stop')
+            .attr('offset', '0%')
+            .attr('stop-color', '#ffffff')
+            .attr('stop-opacity', 0.8);
+            
+        depthGradient.append('stop')
+            .attr('offset', '100%')
+            .attr('stop-color', '#f5f5f5')
+            .attr('stop-opacity', 0.4);
+            
+        // Instance gradient
+        const instanceGradient = this.defs.append('radialGradient')
+            .attr('id', 'instance-gradient')
+            .attr('cx', '30%').attr('cy', '30%');
+            
+        instanceGradient.append('stop')
+            .attr('offset', '0%')
+            .attr('stop-color', '#ffffff')
+            .attr('stop-opacity', 0.8);
+            
+        instanceGradient.append('stop')
+            .attr('offset', '100%')
+            .attr('stop-color', '#000000')
+            .attr('stop-opacity', 0.1);
+    }
+    
+    setupFilters() {
+        // Drop shadow filter
+        const dropShadow = this.defs.append('filter')
+            .attr('id', 'drop-shadow')
+            .attr('x', '-50%').attr('y', '-50%')
+            .attr('width', '200%').attr('height', '200%');
+            
+        dropShadow.append('feDropShadow')
+            .attr('dx', 2).attr('dy', 4)
+            .attr('stdDeviation', 3)
+            .attr('flood-color', '#000000')
+            .attr('flood-opacity', 0.2);
+            
+        // Glow filter for hover effects
+        const glow = this.defs.append('filter')
+            .attr('id', 'glow')
+            .attr('x', '-50%').attr('y', '-50%')
+            .attr('width', '200%').attr('height', '200%');
+            
+        const feGaussianBlur = glow.append('feGaussianBlur')
+            .attr('stdDeviation', '3')
+            .attr('result', 'coloredBlur');
+            
+        const feMerge = glow.append('feMerge');
+        feMerge.append('feMergeNode').attr('in', 'coloredBlur');
+        feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+    }
+    
+    setupScales() {
+        this.xScale = d3.scaleLinear()
+            .domain([0, 100])
+            .range([this.margin.left, this.width - this.margin.right]);
+            
+        this.yScale = d3.scaleLinear()
+            .domain([0, 100])
+            .range([this.margin.top, this.height - this.margin.bottom]);
+    }
+    
+    calculatePositions() {
+        this.positions = {};
+        
+        // VPC boundary
+        this.positions.vpc = {
+            x: this.margin.left,
+            y: this.margin.top,
+            width: this.width - this.margin.left - this.margin.right,
+            height: this.height - this.margin.top - this.margin.bottom
+        };
+        
+        // Subnet positioning
+        const subnetWidth = this.positions.vpc.width * 0.45;
+        const subnetHeight = this.positions.vpc.height * 0.8;
+        
+        this.positions.subnets = {
+            public: {
+                x: this.positions.vpc.x + 20,
+                y: this.positions.vpc.y + 20,
+                width: subnetWidth,
+                height: subnetHeight
+            },
+            private: {
+                x: this.positions.vpc.x + this.positions.vpc.width - subnetWidth - 20,
+                y: this.positions.vpc.y + 20,
+                width: subnetWidth,
+                height: subnetHeight
+            }
+        };
+        
+        // Instance positioning
+        this.positions.instances = {
+            bastion: {
+                x: this.positions.subnets.public.x + subnetWidth/2,
+                y: this.positions.subnets.public.y + subnetHeight/2,
+                subnet: 'public'
+            },
+            orchestrator: {
+                x: this.positions.subnets.private.x + subnetWidth/2,
+                y: this.positions.subnets.private.y + 60,
+                subnet: 'private'
+            }
+        };
+        
+        // Position ML experts in a grid
+        const expertCols = 3;
+        const expertRows = 2;
+        const expertSpacing = { x: subnetWidth/4, y: subnetHeight/4 };
+        const startX = this.positions.subnets.private.x + 40;
+        const startY = this.positions.subnets.private.y + 150;
+        
+        ['clarity', 'grammar', 'documentation', 'structure', 'granularity'].forEach((expert, i) => {
+            const col = i % expertCols;
+            const row = Math.floor(i / expertCols);
+            
+            this.positions.instances[expert] = {
+                x: startX + col * expertSpacing.x,
+                y: startY + row * expertSpacing.y,
+                subnet: 'private'
+            };
+        });
+        
+        // Position non-ML experts
+        this.positions.instances.tooling = {
+            x: this.positions.subnets.private.x + 50,
+            y: this.positions.subnets.private.y + subnetHeight - 80,
+            subnet: 'private'
+        };
+        
+        this.positions.instances.repetition = {
+            x: this.positions.subnets.private.x + subnetWidth - 80,
+            y: this.positions.subnets.private.y + subnetHeight - 80,
+            subnet: 'private'
+        };
+    }
+    
+    renderVisualization() {
+        this.renderVPC();
+        this.renderSubnets();
+        this.renderSecurityGroups();
+        this.renderConnections();
+        this.renderInstances();
+        this.renderLabels();
+    }
+    
+    renderVPC() {
+        this.layers.vpc.append('rect')
+            .attr('x', this.positions.vpc.x)
+            .attr('y', this.positions.vpc.y)
+            .attr('width', this.positions.vpc.width)
+            .attr('height', this.positions.vpc.height)
+            .attr('class', 'vpc-boundary')
+            .style('fill', 'none')
+            .style('stroke', '#ddd')
+            .style('stroke-width', 2)
+            .style('stroke-dasharray', '10,5');
+            
+        // VPC label
+        this.layers.labels.append('text')
+            .attr('x', this.positions.vpc.x + 10)
+            .attr('y', this.positions.vpc.y - 10)
+            .attr('class', 'vpc-label')
+            .style('font-family', 'Inter, sans-serif')
+            .style('font-size', '14px')
+            .style('font-weight', '600')
+            .style('fill', '#666')
+            .text(`VPC: ${this.data.vpc.cidr}`);
+    }
+    
+    renderSubnets() {
+        Object.entries(this.positions.subnets).forEach(([type, pos]) => {
+            const subnet = this.data.vpc.subnets.find(s => s.type === type);
+            if (!subnet) return;
+            
+            this.layers.subnets.append('rect')
+                .attr('x', pos.x)
+                .attr('y', pos.y)
+                .attr('width', pos.width)
+                .attr('height', pos.height)
+                .attr('class', `subnet-${type}`)
+                .style('fill', type === 'public' ? '#e3f2fd' : '#e8f5e8')
+                .style('stroke', type === 'public' ? '#90caf9' : '#81c784')
+                .style('stroke-width', 1)
+                .style('opacity', 0.7);
+                
+            // Subnet label
+            this.layers.labels.append('text')
+                .attr('x', pos.x + 10)
+                .attr('y', pos.y + 20)
+                .attr('class', 'subnet-label')
+                .style('font-family', 'Inter, sans-serif')
+                .style('font-size', '12px')
+                .style('font-weight', '500')
+                .style('fill', '#555')
+                .text(`${subnet.name || `${type} Subnet`}`);
+                
+            this.layers.labels.append('text')
+                .attr('x', pos.x + 10)
+                .attr('y', pos.y + 35)
+                .attr('class', 'subnet-cidr')
+                .style('font-family', 'Consolas, monospace')
+                .style('font-size', '10px')
+                .style('fill', '#777')
+                .text(subnet.cidr);
+        });
+    }
+    
+    renderSecurityGroups() {
+        this.data.securityGroups.forEach(sg => {
+            const instances = sg.instances.map(id => this.data.instances.find(i => i.id === id));
+            if (instances.length === 0) return;
+            
+            // Calculate bounding box for security group
+            const positions = instances.map(inst => this.positions.instances[inst.id]);
+            const minX = Math.min(...positions.map(p => p.x)) - 30;
+            const maxX = Math.max(...positions.map(p => p.x)) + 30;
+            const minY = Math.min(...positions.map(p => p.y)) - 30;
+            const maxY = Math.max(...positions.map(p => p.y)) + 30;
+            
+            this.layers.securityGroups.append('rect')
+                .attr('x', minX)
+                .attr('y', minY)
+                .attr('width', maxX - minX)
+                .attr('height', maxY - minY)
+                .attr('class', `security-group ${sg.id}`)
+                .style('fill', 'none')
+                .style('stroke', sg.color)
+                .style('stroke-width', 2)
+                .style('stroke-dasharray', '8,4')
+                .style('opacity', 0.6);
+                
+            // Security group label
+            this.layers.labels.append('text')
+                .attr('x', minX + 5)
+                .attr('y', minY - 5)
+                .attr('class', 'sg-label')
+                .style('font-family', 'Inter, sans-serif')
+                .style('font-size', '10px')
+                .style('font-weight', '500')
+                .style('fill', sg.color)
+                .text(sg.id);
+        });
+    }
+    
+    renderConnections() {
+        this.data.connections.forEach(conn => {
+            const sourcePos = this.positions.instances[conn.source];
+            const targetPos = this.positions.instances[conn.target];
+            
+            if (!sourcePos || !targetPos) return;
+            
+            const line = this.layers.connections.append('line')
+                .attr('id', `line-${conn.id}`)
+                .attr('x1', sourcePos.x)
+                .attr('y1', sourcePos.y)
+                .attr('x2', targetPos.x)
+                .attr('y2', targetPos.y)
+                .attr('class', `connection-line ${conn.type}`)
+                .style('stroke', conn.type === 'api' ? '#7b1fa2' : '#f57c00')
+                .style('stroke-width', 2)
+                .style('stroke-opacity', 0.4)
+                .style('stroke-dasharray', conn.type === 'api' ? '5,5' : '3,3');
+        });
+    }
+    
+    renderInstances() {
+        this.data.instances.forEach(instance => {
+            const pos = this.positions.instances[instance.id];
+            if (!pos) return;
+            
+            const instanceGroup = this.layers.instances.append('g')
+                .attr('class', 'instance')
+                .attr('data-id', instance.id)
+                .attr('transform', `translate(${pos.x}, ${pos.y})`);
+            
+            // Instance circle
+            instanceGroup.append('circle')
+                .attr('r', 25)
+                .attr('class', 'instance-circle')
+                .style('fill', instance.color)
+                .style('stroke', '#fff')
+                .style('stroke-width', 3)
+                .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))');
+            
+            // Instance icon or text
+            instanceGroup.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '0.35em')
+                .style('fill', '#fff')
+                .style('font-family', 'Inter, sans-serif')
+                .style('font-size', '10px')
+                .style('font-weight', '600')
+                .text(this.getInstanceIcon(instance.type));
+        });
+    }
+    
+    renderLabels() {
+        this.data.instances.forEach(instance => {
+            const pos = this.positions.instances[instance.id];
+            if (!pos) return;
+            
+            // Instance name
+            this.layers.labels.append('text')
+                .attr('x', pos.x)
+                .attr('y', pos.y + 40)
+                .attr('class', 'instance-label')
+                .style('text-anchor', 'middle')
+                .style('font-family', 'Inter, sans-serif')
+                .style('font-size', '11px')
+                .style('font-weight', '500')
+                .style('fill', '#333')
+                .text(instance.name);
+                
+            // Port number for experts
+            if (instance.port) {
+                this.layers.labels.append('text')
+                    .attr('x', pos.x)
+                    .attr('y', pos.y + 52)
+                    .attr('class', 'port-label')
+                    .style('text-anchor', 'middle')
+                    .style('font-family', 'Consolas, monospace')
+                    .style('font-size', '9px')
+                    .style('fill', '#666')
+                    .text(`:${instance.port}`);
+            }
+            
+            // Private IP
+            this.layers.labels.append('text')
+                .attr('x', pos.x)
+                .attr('y', pos.y + (instance.port ? 64 : 52))
+                .attr('class', 'ip-label')
+                .style('text-anchor', 'middle')
+                .style('font-family', 'Consolas, monospace')
+                .style('font-size', '8px')
+                .style('fill', '#888')
+                .text(instance.privateIp || instance.publicIp);
+        });
+    }
+    
+    getInstanceIcon(type) {
+        const icons = {
+            'bastion': 'SSH',
+            'orchestrator': 'API',
+            'ml-expert': 'ML',
+            'non-ml-expert': 'SVC'
+        };
+        return icons[type] || '?';
+    }
+    
+    setupInteractivity() {
+        // Component hover handlers
+        this.layers.instances.selectAll('.instance')
+            .on('mouseenter', this.onComponentHover.bind(this))
+            .on('mouseleave', this.onComponentLeave.bind(this))
+            .on('click', this.onComponentClick.bind(this));
+    }
+    
+    onComponentHover(event, d) {
+        const component = d3.select(event.currentTarget);
+        const componentId = component.attr('data-id');
+        
+        // Elevate component
+        component
+            .transition()
+            .duration(200)
+            .style('transform', 'scale(1.1)')
+            .style('filter', 'url(#glow)');
+        
+        // Show connection previews
+        this.showConnectionPreviews(componentId);
+        
+        // Update cursor
+        component.style('cursor', 'pointer');
+    }
+    
+    onComponentLeave(event, d) {
+        const component = d3.select(event.currentTarget);
+        
+        // Reset elevation
+        component
+            .transition()
+            .duration(200)
+            .style('transform', 'scale(1)')
+            .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))');
+        
+        // Hide connection previews
+        this.hideConnectionPreviews();
+    }
+    
+    onComponentClick(event, d) {
+        event.stopPropagation();
+        const componentId = d3.select(event.currentTarget).attr('data-id');
+        const instanceData = this.data.instances.find(i => i.id === componentId);
+        
+        // Trigger full connection animation
+        this.animateConnections(componentId, 1);
+        
+        // Show detail panel (will be implemented in component-panel.js)
+        if (window.componentDetailPanel) {
+            window.componentDetailPanel.show(instanceData);
+        }
+    }
+    
+    showConnectionPreviews(componentId) {
+        const connections = this.getDirectConnections(componentId);
+        
+        connections.forEach(connection => {
+            const line = d3.select(`#line-${connection.id}`);
+            line.classed('preview', true)
+               .style('stroke-opacity', 0.8)
+               .style('stroke-width', 3);
+        });
+    }
+    
+    hideConnectionPreviews() {
+        d3.selectAll('.connection-line')
+            .classed('preview', false)
+            .style('stroke-opacity', 0.4)
+            .style('stroke-width', 2);
+    }
+    
+    animateConnections(componentId, depth = 1) {
+        const connections = this.getConnectionsAtDepth(componentId, depth);
+        
+        // Clear previous animations
+        d3.selectAll('.connection-line').classed('animated', false);
+        d3.selectAll('.connection-particle').remove();
+        
+        connections.forEach(connection => {
+            const line = d3.select(`#line-${connection.id}`);
+            line.classed('animated', true)
+               .style('stroke-opacity', 1)
+               .style('stroke-width', 3);
+               
+            // Add animated particles for API connections
+            if (connection.type === 'api') {
+                this.animateDataFlow(connection);
+            }
+        });
+    }
+    
+    animateDataFlow(connection) {
+        const line = d3.select(`#line-${connection.id}`);
+        const x1 = parseFloat(line.attr('x1'));
+        const y1 = parseFloat(line.attr('y1'));
+        const x2 = parseFloat(line.attr('x2'));
+        const y2 = parseFloat(line.attr('y2'));
+        
+        // Create moving particles along line
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                const particle = this.svg.append('circle')
+                    .attr('class', 'connection-particle')
+                    .attr('r', 3)
+                    .attr('cx', x1)
+                    .attr('cy', y1)
+                    .style('fill', connection.type === 'api' ? '#7b1fa2' : '#f57c00')
+                    .style('opacity', 0.8);
+                
+                particle.transition()
+                    .duration(2000)
+                    .ease(d3.easeLinear)
+                    .attr('cx', x2)
+                    .attr('cy', y2)
+                    .style('opacity', 0)
+                    .remove();
+            }, i * 200);
+        }
+    }
+    
+    getDirectConnections(componentId) {
+        return this.data.connections.filter(conn => 
+            conn.source === componentId || conn.target === componentId
+        );
+    }
+    
+    getConnectionsAtDepth(componentId, depth) {
+        const visited = new Set();
+        const connections = [];
+        
+        const traverse = (currentId, currentDepth) => {
+            if (currentDepth > depth || visited.has(currentId)) return;
+            visited.add(currentId);
+            
+            this.data.connections.forEach(conn => {
+                if (conn.source === currentId && !visited.has(conn.target)) {
+                    connections.push(conn);
+                    if (currentDepth < depth) {
+                        traverse(conn.target, currentDepth + 1);
+                    }
+                }
+                if (conn.target === currentId && !visited.has(conn.source)) {
+                    connections.push(conn);
+                    if (currentDepth < depth) {
+                        traverse(conn.source, currentDepth + 1);
+                    }
+                }
+            });
+        };
+        
+        traverse(componentId, 0);
+        return connections;
+    }
+    
+    // Public methods for accessibility controls
+    focusComponent(componentId) {
+        const component = this.layers.instances.select(`[data-id="${componentId}"]`);
+        if (!component.empty()) {
+            this.animateConnections(componentId, 1);
+            
+            // Highlight the component
+            component
+                .transition()
+                .duration(500)
+                .style('transform', 'scale(1.2)')
+                .transition()
+                .duration(300)
+                .style('transform', 'scale(1)');
+        }
+    }
+    
+    showAllConnections() {
+        this.data.connections.forEach(conn => {
+            const line = d3.select(`#line-${conn.id}`);
+            line.style('stroke-opacity', 0.8)
+               .style('stroke-width', 2);
+        });
+        
+        setTimeout(() => {
+            this.hideConnectionPreviews();
+        }, 3000);
+    }
+}
+
+// Global functions for accessibility controls
+function focusComponent(componentId) {
+    if (window.infrastructureViz) {
+        window.infrastructureViz.focusComponent(componentId);
+    }
+}
+
+function showAllConnections() {
+    if (window.infrastructureViz) {
+        window.infrastructureViz.showAllConnections();
+    }
+}
