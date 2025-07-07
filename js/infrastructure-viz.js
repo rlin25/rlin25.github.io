@@ -381,7 +381,7 @@ class InfrastructureVisualization {
                     .attr('class', 'port-label')
                     .style('text-anchor', 'middle')
                     .style('font-family', 'Consolas, monospace')
-                    .style('font-size', '9px')
+                    .style('font-size', '10px')
                     .style('fill', '#666')
                     .text(`:${instance.port}`);
             }
@@ -394,7 +394,7 @@ class InfrastructureVisualization {
                 .attr('class', 'ip-label')
                 .style('text-anchor', 'middle')
                 .style('font-family', 'Consolas, monospace')
-                .style('font-size', '8px')
+                .style('font-size', '9px')
                 .style('fill', '#888')
                 .text(instance.privateIp || instance.publicIp);
         });
