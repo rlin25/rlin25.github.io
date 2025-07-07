@@ -303,6 +303,7 @@ class InfrastructureVisualization {
             .style('font-size', `${this.fontSize.vpcLabel}px`)
             .style('font-weight', '600')
             .style('fill', '#666')
+            .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8), 1px -1px 2px rgba(255,255,255,0.8), -1px 1px 2px rgba(255,255,255,0.8)')
             .text(`VPC: ${this.data.vpc.cidr}`);
     }
     
@@ -322,25 +323,26 @@ class InfrastructureVisualization {
                 .style('stroke-width', 1)
                 .style('opacity', 0.7);
                 
-            // Subnet label - positioned inside the colored rectangle at bottom
+            // Subnet label
             this.layers.labels.append('text')
                 .attr('x', pos.x + 10)
-                .attr('y', pos.y + pos.height - 25)
+                .attr('y', pos.y + 20)
                 .attr('class', 'subnet-label')
                 .style('font-family', 'Inter, sans-serif')
                 .style('font-size', `${this.fontSize.subnetLabel}px`)
-                .style('font-weight', '600')
-                .style('fill', type === 'public' ? '#1976d2' : '#388e3c')
+                .style('font-weight', '500')
+                .style('fill', '#555')
+                .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8), 1px -1px 2px rgba(255,255,255,0.8), -1px 1px 2px rgba(255,255,255,0.8)')
                 .text(`${subnet.name || `${type} Subnet`}`);
                 
             this.layers.labels.append('text')
                 .attr('x', pos.x + 10)
-                .attr('y', pos.y + pos.height - 8)
+                .attr('y', pos.y + 35)
                 .attr('class', 'subnet-cidr')
                 .style('font-family', 'Consolas, monospace')
                 .style('font-size', `${this.fontSize.subnetCidr}px`)
-                .style('fill', type === 'public' ? '#1976d2' : '#388e3c')
-                .style('font-weight', '500')
+                .style('fill', '#777')
+                .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8), 1px -1px 2px rgba(255,255,255,0.8), -1px 1px 2px rgba(255,255,255,0.8)')
                 .text(subnet.cidr);
         });
     }
@@ -378,6 +380,7 @@ class InfrastructureVisualization {
                 .style('font-size', `${this.fontSize.sgLabel}px`)
                 .style('font-weight', '500')
                 .style('fill', sg.color)
+                .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8), 1px -1px 2px rgba(255,255,255,0.8), -1px 1px 2px rgba(255,255,255,0.8)')
                 .text(sg.id);
         });
     }
@@ -460,6 +463,7 @@ class InfrastructureVisualization {
                 .style('font-size', `${this.fontSize.instanceLabel}px`)
                 .style('font-weight', '500')
                 .style('fill', '#333')
+                .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8), 1px -1px 2px rgba(255,255,255,0.8), -1px 1px 2px rgba(255,255,255,0.8)')
                 .text(instance.name);
                 
             // Port number for experts
@@ -473,6 +477,7 @@ class InfrastructureVisualization {
                     .style('font-family', 'Consolas, monospace')
                     .style('font-size', `${this.fontSize.portLabel}px`)
                     .style('fill', '#666')
+                    .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8), 1px -1px 2px rgba(255,255,255,0.8), -1px 1px 2px rgba(255,255,255,0.8)')
                     .text(`:${instance.port}`);
             }
             
@@ -486,6 +491,7 @@ class InfrastructureVisualization {
                 .style('font-family', 'Consolas, monospace')
                 .style('font-size', `${this.fontSize.ipLabel}px`)
                 .style('fill', '#888')
+                .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8), 1px -1px 2px rgba(255,255,255,0.8), -1px 1px 2px rgba(255,255,255,0.8)')
                 .text(instance.privateIp || instance.publicIp);
         });
     }
@@ -862,24 +868,24 @@ class InfrastructureVisualization {
         this.data.vpc.subnets.forEach(subnet => {
             const pos = this.positions.subnets[subnet.type];
             if (pos) {
-                // Update subnet name labels - positioned inside rectangle at bottom
+                // Update subnet name labels
                 this.layers.labels.selectAll('.subnet-label')
                     .filter(function() {
                         const x = d3.select(this).attr('x');
                         return Math.abs(x - (pos.x + 10)) < 5; // Match by position
                     })
                     .attr('x', pos.x + 10)
-                    .attr('y', pos.y + pos.height - 25)
+                    .attr('y', pos.y + 20)
                     .style('font-size', `${this.fontSize.subnetLabel}px`);
                 
-                // Update subnet CIDR labels - positioned inside rectangle at bottom
+                // Update subnet CIDR labels
                 this.layers.labels.selectAll('.subnet-cidr')
                     .filter(function() {
                         const x = d3.select(this).attr('x');
                         return Math.abs(x - (pos.x + 10)) < 5; // Match by position
                     })
                     .attr('x', pos.x + 10)
-                    .attr('y', pos.y + pos.height - 8)
+                    .attr('y', pos.y + 35)
                     .style('font-size', `${this.fontSize.subnetCidr}px`);
             }
         });
