@@ -411,9 +411,21 @@ class InfrastructureVisualization {
         const componentId = component.attr('data-id');
         const pos = this.positions.instances[componentId];
         
-        if (!pos) return;
+        // Debug logging
+        console.log('Hover - componentId:', componentId);
+        console.log('Hover - pos:', pos);
+        console.log('Hover - all positions:', this.positions.instances);
         
-        // Scale using SVG transform instead of CSS
+        if (!pos) {
+            console.error('Position not found for component:', componentId);
+            return;
+        }
+        
+        // Get current transform and parse it to preserve original position
+        const currentTransform = component.attr('transform');
+        console.log('Current transform:', currentTransform);
+        
+        // Apply scale while preserving position
         component
             .transition()
             .duration(200)
@@ -432,7 +444,10 @@ class InfrastructureVisualization {
         const componentId = component.attr('data-id');
         const pos = this.positions.instances[componentId];
         
-        if (!pos) return;
+        if (!pos) {
+            console.error('Position not found for component:', componentId);
+            return;
+        }
         
         // Reset to original transform
         component
