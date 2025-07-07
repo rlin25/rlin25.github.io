@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Richard - Systems Architect & AI Engineer</title>
+    <meta name="description" content="Senior-level AWS infrastructure and AI systems architect. Built production-scale distributed AI evaluation system with VPC security, fine-tuned ML models, and microservices orchestration.">
+    <meta name="keywords" content="AWS, VPC, bastion host, DistilBERT, machine learning, microservices, DevOps, infrastructure, AI systems">
+    <meta property="og:title" content="Richard - Systems Architect & AI Engineer">
+    <meta property="og:description" content="Production AWS infrastructure specialist with advanced ML pipeline design experience">
+    <meta property="og:type" content="website">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Richard",
+        "jobTitle": "Systems Architect & AI Engineer", 
+        "description": "AWS infrastructure specialist with production ML system experience",
+        "skills": ["AWS VPC", "DistilBERT", "Microservices", "Infrastructure Security", "ML Pipelines"]
+    }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="hero-section">
+        <div class="hero-content">
+            <h1>I architect and deploy production AI systems</h1>
+            <p class="subtitle">HackAI winner • AWS infrastructure specialist • ML pipeline designer</p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number">7</span>
+                    <span class="stat-label">ML Experts</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">9</span>
+                    <span class="stat-label">EC2 Instances</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">2</span>
+                    <span class="stat-label">Security Groups</span>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section class="architecture-viz">
+            <div class="container">
+                <h2>FrizzlesRubric: Distributed AI Evaluation System</h2>
+                <div id="d3-container" 
+                     role="img" 
+                     aria-label="Interactive diagram showing FrizzlesRubric distributed AI system architecture with 7 evaluation experts, VPC networking, and security groups"
+                     tabindex="0">
+                </div>
+                <div class="interaction-guide">
+                    <p>Click any component to explore technical details • Hover to see connections</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="challenge-solution">
+            <div class="container">
+                <h2>The Challenge: Distributed AI System at Scale</h2>
+                <p>Building FrizzlesRubric required coordinating 7 specialized evaluation components across a secure, scalable infrastructure. The system needed to handle concurrent prompt evaluations while maintaining low latency and high availability.</p>
+                
+                <div class="technical-highlights">
+                    <div class="highlight">
+                        <h3>ML Pipeline Design</h3>
+                        <p>Fine-tuned 5 DistilBERT models on custom datasets, achieving 94% accuracy on prompt clarity evaluation.</p>
+                    </div>
+                    <div class="highlight">
+                        <h3>Infrastructure Security</h3>
+                        <p>Implemented VPC with bastion host architecture, enabling secure access to private subnet resources.</p>
+                    </div>
+                    <div class="highlight">
+                        <h3>Async Orchestration</h3>
+                        <p>Designed timeout-resilient API coordination across microservices with graceful error handling.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="problem-solving">
+            <div class="container">
+                <h2>Technical Problem Solving</h2>
+                <div class="problem-grid">
+                    <div class="problem-card">
+                        <h3>SSH Agent Forwarding</h3>
+                        <p><strong>Problem:</strong> Complex SSH access through bastion host to private instances</p>
+                        <p><strong>Solution:</strong> Configured ProxyJump with agent forwarding for seamless multi-hop SSH</p>
+                        <div class="code-section">
+                            <div class="code-header">SSH Configuration</div>
+                            <pre><code>Host orchestrator
+    HostName 172.31.48.224
+    ProxyJump frizzlesrubric-bastion
+    ForwardAgent yes</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="problem-card">
+                        <h3>Service Discovery</h3>
+                        <p><strong>Problem:</strong> Coordinating API calls across 7 distributed services</p>
+                        <p><strong>Solution:</strong> Configuration-driven service discovery with hardcoded IPs for hackathon speed</p>
+                        <div class="code-section">
+                            <div class="code-header">Python Configuration</div>
+                            <pre><code>EXPERTS = {
+    'clarity': '172.31.48.225:8003',
+    'grammar': '172.31.48.226:8004',
+    # ... 5 more experts
+}</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="problem-card">
+                        <h3>Cost Optimization</h3>
+                        <p><strong>Problem:</strong> $3,905/month AWS costs unsustainable for demo</p>
+                        <p><strong>Solution:</strong> Analyzed cost breakdown and identified GPU instances as primary driver</p>
+                        <ul>
+                            <li>GPU Instances: $3,033.60/month (77.7%)</li>
+                            <li>Storage: $535.00/month (13.7%)</li>
+                            <li>Networking: $222.20/month (5.7%)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Accessibility controls -->
+    <div class="accessibility-controls" aria-hidden="true">
+        <button onclick="focusComponent('orchestrator')" aria-label="Focus on central orchestrator">
+            Focus Orchestrator
+        </button>
+        <button onclick="showAllConnections()" aria-label="Show all system connections">
+            Show All Connections  
+        </button>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/infrastructure-data.js"></script>
+    <script src="js/infrastructure-viz.js"></script>
+    <script src="js/component-panel.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
