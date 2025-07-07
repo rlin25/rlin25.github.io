@@ -92,29 +92,6 @@ function setupKeyboardNavigation() {
             event.preventDefault();
         }
         
-        // Number keys to focus on specific components
-        const componentMap = {
-            '1': 'bastion',
-            '2': 'orchestrator', 
-            '3': 'clarity',
-            '4': 'grammar',
-            '5': 'documentation',
-            '6': 'structure',
-            '7': 'granularity',
-            '8': 'tooling',
-            '9': 'repetition'
-        };
-        
-        if (componentMap[event.key] && window.infrastructureViz) {
-            window.infrastructureViz.focusComponent(componentMap[event.key]);
-            event.preventDefault();
-        }
-        
-        // 'A' key to show all connections
-        if (event.key.toLowerCase() === 'a' && window.infrastructureViz) {
-            window.infrastructureViz.showAllConnections();
-            event.preventDefault();
-        }
     });
 }
 
@@ -207,19 +184,3 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Export global functions for accessibility controls
-window.focusComponent = function(componentId) {
-    if (window.infrastructureViz) {
-        window.infrastructureViz.focusComponent(componentId);
-        trackComponentInteraction(componentId, 'keyboard_focus');
-        announceToScreenReader(`Focused on ${componentId} component`);
-    }
-};
-
-window.showAllConnections = function() {
-    if (window.infrastructureViz) {
-        window.infrastructureViz.showAllConnections();
-        trackComponentInteraction('all', 'show_connections');
-        announceToScreenReader('Showing all system connections');
-    }
-};

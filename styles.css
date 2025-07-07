@@ -257,35 +257,6 @@ code {
     font-family: 'Consolas', 'Monaco', monospace;
 }
 
-/* Accessibility Controls */
-.accessibility-controls {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    z-index: 1000;
-    display: flex;
-    gap: 10px;
-}
-
-.accessibility-controls button {
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.3s ease;
-}
-
-.accessibility-controls button:hover {
-    background: #5a6fd8;
-}
-
-.accessibility-controls button:focus {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-}
 
 /* D3.js Visualization Styles */
 .vpc-layer {
@@ -522,14 +493,6 @@ code {
     
     #d3-container {
         height: 600px;
-    }
-    
-    .accessibility-controls {
-        position: relative;
-        bottom: auto;
-        left: auto;
-        margin: 20px 0;
-        justify-content: center;
     }
 }
 

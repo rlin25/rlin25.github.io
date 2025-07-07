@@ -787,25 +787,6 @@ class InfrastructureVisualization {
         return connections;
     }
     
-    // Public methods for accessibility controls
-    focusComponent(componentId) {
-        const component = this.layers.instances.select(`[data-id="${componentId}"]`);
-        const pos = this.positions.instances[componentId];
-        
-        if (!component.empty() && pos) {
-            this.animateConnections(componentId, 1);
-            
-            // Highlight the component using SVG transform
-            component
-                .transition()
-                .duration(500)
-                .attr('transform', `translate(${pos.x}, ${pos.y}) scale(1.2)`)
-                .transition()
-                .duration(300)
-                .attr('transform', `translate(${pos.x}, ${pos.y}) scale(1)`);
-        }
-    }
-    
     updateDimensions(newWidth, newHeight) {
         // Update internal dimensions
         const aspectRatio = this.width / this.height;
@@ -956,28 +937,4 @@ class InfrastructureVisualization {
         this.updateSecurityGroups();
     }
     
-    showAllConnections() {
-        this.data.connections.forEach(conn => {
-            const line = d3.select(`#line-${conn.id}`);
-            line.style('stroke-opacity', 0.8)
-               .style('stroke-width', 2);
-        });
-        
-        setTimeout(() => {
-            this.hideConnectionPreviews();
-        }, 3000);
-    }
-}
-
-// Global functions for accessibility controls
-function focusComponent(componentId) {
-    if (window.infrastructureViz) {
-        window.infrastructureViz.focusComponent(componentId);
-    }
-}
-
-function showAllConnections() {
-    if (window.infrastructureViz) {
-        window.infrastructureViz.showAllConnections();
-    }
 }
