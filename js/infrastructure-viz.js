@@ -146,9 +146,10 @@ class InfrastructureVisualization {
         
         // Determine layout based on aspect ratio
         const aspectRatio = this.width / this.height;
-        this.isVerticalLayout = aspectRatio < 1.2; // Switch to vertical when width/height < 1.2
+        this.isVerticalLayout = aspectRatio < 1.5; // Switch to vertical when width/height < 1.5 (more aggressive)
         
-        console.log('Aspect ratio:', aspectRatio.toFixed(2), 'Layout:', this.isVerticalLayout ? 'vertical' : 'horizontal');
+        console.log('LAYOUT CALCULATION - Dimensions:', this.width, 'x', this.height);
+        console.log('LAYOUT CALCULATION - Aspect ratio:', aspectRatio.toFixed(2), 'Layout:', this.isVerticalLayout ? 'VERTICAL' : 'HORIZONTAL');
         
         // Subnet positioning - adaptive layout
         let subnetWidth, subnetHeight;
