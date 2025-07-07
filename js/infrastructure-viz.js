@@ -7,6 +7,19 @@ class InfrastructureVisualization {
         this.height = 800;
         this.margin = { top: 40, right: 40, bottom: 40, left: 40 };
         
+        // Base scaling factors
+        this.baseRadius = 25;
+        this.baseFontSize = {
+            instanceIcon: 10,
+            instanceLabel: 11,
+            portLabel: 12,
+            ipLabel: 11,
+            vpcLabel: 14,
+            subnetLabel: 12,
+            subnetCidr: 10,
+            sgLabel: 10
+        };
+        
         this.setupSVG();
         this.setupScales();
         this.calculatePositions();
@@ -111,6 +124,18 @@ class InfrastructureVisualization {
     calculatePositions() {
         this.positions = {};
         
+        // Calculate scaling factors based on current dimensions
+        const baseWidth = 1200;
+        const baseHeight = 800;
+        this.scaleFactor = Math.min(this.width / baseWidth, this.height / baseHeight);
+        this.nodeRadius = this.baseRadius * this.scaleFactor;
+        
+        // Calculate responsive font sizes
+        this.fontSize = {};
+        for (const [key, value] of Object.entries(this.baseFontSize)) {
+            this.fontSize[key] = Math.max(8, value * this.scaleFactor);
+        }
+        
         // VPC boundary
         this.positions.vpc = {
             x: this.margin.left,
@@ -211,7 +236,7 @@ class InfrastructureVisualization {
             .attr('y', this.positions.vpc.y - 10)
             .attr('class', 'vpc-label')
             .style('font-family', 'Inter, sans-serif')
-            .style('font-size', '14px')
+            .style('font-size', `${this.fontSize.vpcLabel}px`)
             .style('font-weight', '600')
             .style('fill', '#666')
             .text(`VPC: ${this.data.vpc.cidr}`);
@@ -239,7 +264,7 @@ class InfrastructureVisualization {
                 .attr('y', pos.y + 20)
                 .attr('class', 'subnet-label')
                 .style('font-family', 'Inter, sans-serif')
-                .style('font-size', '12px')
+                .style('font-size', `${this.fontSize.subnetLabel}px`)
                 .style('font-weight', '500')
                 .style('fill', '#555')
                 .text(`${subnet.name || `${type} Subnet`}`);
@@ -249,7 +274,7 @@ class InfrastructureVisualization {
                 .attr('y', pos.y + 35)
                 .attr('class', 'subnet-cidr')
                 .style('font-family', 'Consolas, monospace')
-                .style('font-size', '10px')
+                .style('font-size', `${this.fontSize.subnetCidr}px`)
                 .style('fill', '#777')
                 .text(subnet.cidr);
         });
@@ -285,7 +310,7 @@ class InfrastructureVisualization {
                 .attr('y', minY - 5)
                 .attr('class', 'sg-label')
                 .style('font-family', 'Inter, sans-serif')
-                .style('font-size', '10px')
+                .style('font-size', `${this.fontSize.sgLabel}px`)
                 .style('font-weight', '500')
                 .style('fill', sg.color)
                 .text(sg.id);
@@ -335,11 +360,11 @@ class InfrastructureVisualization {
             
             // Instance circle
             instanceGroup.append('circle')
-                .attr('r', 25)
+                .attr('r', this.nodeRadius)
                 .attr('class', 'instance-circle')
                 .style('fill', instance.color)
                 .style('stroke', '#fff')
-                .style('stroke-width', 3)
+                .style('stroke-width', Math.max(1, 3 * this.scaleFactor))
                 .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))');
             
             // Instance icon or text
@@ -348,7 +373,7 @@ class InfrastructureVisualization {
                 .attr('dy', '0.35em')
                 .style('fill', '#fff')
                 .style('font-family', 'Inter, sans-serif')
-                .style('font-size', '10px')
+                .style('font-size', `${this.fontSize.instanceIcon}px`)
                 .style('font-weight', '600')
                 .text(this.getInstanceIcon(instance.type));
         });
@@ -363,11 +388,11 @@ class InfrastructureVisualization {
             this.layers.labels.append('text')
                 .attr('id', `label-name-${instance.id}`)
                 .attr('x', pos.x)
-                .attr('y', pos.y + 40)
+                .attr('y', pos.y + this.nodeRadius + 15)
                 .attr('class', 'instance-label')
                 .style('text-anchor', 'middle')
                 .style('font-family', 'Inter, sans-serif')
-                .style('font-size', '11px')
+                .style('font-size', `${this.fontSize.instanceLabel}px`)
                 .style('font-weight', '500')
                 .style('fill', '#333')
                 .text(instance.name);
@@ -377,11 +402,11 @@ class InfrastructureVisualization {
                 this.layers.labels.append('text')
                     .attr('id', `label-port-${instance.id}`)
                     .attr('x', pos.x)
-                    .attr('y', pos.y + 52)
+                    .attr('y', pos.y + this.nodeRadius + 27)
                     .attr('class', 'port-label')
                     .style('text-anchor', 'middle')
                     .style('font-family', 'Consolas, monospace')
-                    .style('font-size', '12px')
+                    .style('font-size', `${this.fontSize.portLabel}px`)
                     .style('fill', '#666')
                     .text(`:${instance.port}`);
             }
@@ -390,11 +415,11 @@ class InfrastructureVisualization {
             this.layers.labels.append('text')
                 .attr('id', `label-ip-${instance.id}`)
                 .attr('x', pos.x)
-                .attr('y', pos.y + (instance.port ? 64 : 52))
+                .attr('y', pos.y + this.nodeRadius + (instance.port ? 39 : 27))
                 .attr('class', 'ip-label')
                 .style('text-anchor', 'middle')
                 .style('font-family', 'Consolas, monospace')
-                .style('font-size', '11px')
+                .style('font-size', `${this.fontSize.ipLabel}px`)
                 .style('fill', '#888')
                 .text(instance.privateIp || instance.publicIp);
         });
@@ -464,8 +489,8 @@ class InfrastructureVisualization {
     
     getSubnetConstraints(instance) {
         // Define padding from subnet edges
-        const padding = 40;
-        const instanceRadius = 25;
+        const padding = 40 * this.scaleFactor;
+        const instanceRadius = this.nodeRadius;
         
         // Get the appropriate subnet boundaries
         let subnetBounds;
@@ -508,19 +533,19 @@ class InfrastructureVisualization {
         // Update instance name label
         d3.select(`#label-name-${instanceId}`)
             .attr('x', newX)
-            .attr('y', newY + 40);
+            .attr('y', newY + this.nodeRadius + 15);
         
         // Update port label if it exists
         if (instance.port) {
             d3.select(`#label-port-${instanceId}`)
                 .attr('x', newX)
-                .attr('y', newY + 52);
+                .attr('y', newY + this.nodeRadius + 27);
         }
         
         // Update IP label
         d3.select(`#label-ip-${instanceId}`)
             .attr('x', newX)
-            .attr('y', newY + (instance.port ? 64 : 52));
+            .attr('y', newY + this.nodeRadius + (instance.port ? 39 : 27));
     }
     
     updateSecurityGroups() {
@@ -770,17 +795,48 @@ class InfrastructureVisualization {
             }
         });
         
-        // Update instances positions
+        // Update instances positions and sizes
         this.data.instances.forEach(instance => {
             const pos = this.positions.instances[instance.id];
             if (pos) {
                 const instanceGroup = this.layers.instances.select(`[data-id="${instance.id}"]`);
                 if (!instanceGroup.empty()) {
                     instanceGroup.attr('transform', `translate(${pos.x}, ${pos.y})`);
+                    
+                    // Update circle radius and stroke width
+                    instanceGroup.select('circle')
+                        .attr('r', this.nodeRadius)
+                        .style('stroke-width', Math.max(1, 3 * this.scaleFactor));
+                    
+                    // Update text size
+                    instanceGroup.select('text')
+                        .style('font-size', `${this.fontSize.instanceIcon}px`);
                 }
                 
-                // Update labels
-                this.updateInstanceLabels(instance.id, pos.x, pos.y);
+                // Update labels with responsive sizing
+                const nameLabel = d3.select(`#label-name-${instance.id}`);
+                if (!nameLabel.empty()) {
+                    nameLabel
+                        .attr('x', pos.x)
+                        .attr('y', pos.y + this.nodeRadius + 15)
+                        .style('font-size', `${this.fontSize.instanceLabel}px`);
+                }
+                
+                const portLabel = d3.select(`#label-port-${instance.id}`);
+                if (!portLabel.empty()) {
+                    portLabel
+                        .attr('x', pos.x)
+                        .attr('y', pos.y + this.nodeRadius + 27)
+                        .style('font-size', `${this.fontSize.portLabel}px`);
+                }
+                
+                const ipLabel = d3.select(`#label-ip-${instance.id}`);
+                if (!ipLabel.empty()) {
+                    ipLabel
+                        .attr('x', pos.x)
+                        .attr('y', pos.y + this.nodeRadius + (instance.port ? 39 : 27))
+                        .style('font-size', `${this.fontSize.ipLabel}px`);
+                }
             }
         });
         
