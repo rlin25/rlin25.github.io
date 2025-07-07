@@ -144,26 +144,56 @@ class InfrastructureVisualization {
             height: this.height - this.margin.top - this.margin.bottom
         };
         
-        // Subnet positioning
-        const subnetWidth = this.positions.vpc.width * 0.45;
-        const subnetHeight = this.positions.vpc.height * 0.8;
+        // Determine layout based on aspect ratio
+        const aspectRatio = this.width / this.height;
+        this.isVerticalLayout = aspectRatio < 1.2; // Switch to vertical when width/height < 1.2
         
-        this.positions.subnets = {
-            public: {
-                x: this.positions.vpc.x + 20,
-                y: this.positions.vpc.y + 20,
-                width: subnetWidth,
-                height: subnetHeight
-            },
-            private: {
-                x: this.positions.vpc.x + this.positions.vpc.width - subnetWidth - 20,
-                y: this.positions.vpc.y + 20,
-                width: subnetWidth,
-                height: subnetHeight
-            }
-        };
+        console.log('Aspect ratio:', aspectRatio.toFixed(2), 'Layout:', this.isVerticalLayout ? 'vertical' : 'horizontal');
         
-        // Instance positioning
+        // Subnet positioning - adaptive layout
+        let subnetWidth, subnetHeight;
+        
+        if (this.isVerticalLayout) {
+            // Vertical layout - subnets stacked vertically
+            subnetWidth = this.positions.vpc.width * 0.85;
+            subnetHeight = this.positions.vpc.height * 0.4;
+            
+            this.positions.subnets = {
+                public: {
+                    x: this.positions.vpc.x + (this.positions.vpc.width - subnetWidth) / 2,
+                    y: this.positions.vpc.y + 20,
+                    width: subnetWidth,
+                    height: subnetHeight
+                },
+                private: {
+                    x: this.positions.vpc.x + (this.positions.vpc.width - subnetWidth) / 2,
+                    y: this.positions.vpc.y + subnetHeight + 40,
+                    width: subnetWidth,
+                    height: subnetHeight
+                }
+            };
+        } else {
+            // Horizontal layout - subnets side by side
+            subnetWidth = this.positions.vpc.width * 0.45;
+            subnetHeight = this.positions.vpc.height * 0.8;
+            
+            this.positions.subnets = {
+                public: {
+                    x: this.positions.vpc.x + 20,
+                    y: this.positions.vpc.y + 20,
+                    width: subnetWidth,
+                    height: subnetHeight
+                },
+                private: {
+                    x: this.positions.vpc.x + this.positions.vpc.width - subnetWidth - 20,
+                    y: this.positions.vpc.y + 20,
+                    width: subnetWidth,
+                    height: subnetHeight
+                }
+            };
+        }
+        
+        // Instance positioning - adaptive based on layout
         this.positions.instances = {
             bastion: {
                 x: this.positions.subnets.public.x + subnetWidth/2,
@@ -171,18 +201,30 @@ class InfrastructureVisualization {
                 subnet: 'public'
             },
             orchestrator: {
-                x: this.positions.subnets.private.x + subnetWidth/2 + 30,
-                y: this.positions.subnets.private.y + 60 + 10 + 5,
+                x: this.positions.subnets.private.x + subnetWidth/2 + (this.isVerticalLayout ? 0 : 30),
+                y: this.positions.subnets.private.y + (this.isVerticalLayout ? 60 : 60 + 10 + 5),
                 subnet: 'private'
             }
         };
         
-        // Position ML experts in a grid
-        const expertCols = 3;
-        const expertRows = 2;
-        const expertSpacing = { x: subnetWidth/4, y: subnetHeight/4 };
-        const startX = this.positions.subnets.private.x + 40;
-        const startY = this.positions.subnets.private.y + 150 + 5;
+        // Position ML experts in a grid - adjust for layout
+        let expertCols, expertRows, expertSpacing, startX, startY;
+        
+        if (this.isVerticalLayout) {
+            // Vertical layout - more compact grid
+            expertCols = 3;
+            expertRows = 2;
+            expertSpacing = { x: subnetWidth/4, y: subnetHeight/3.5 };
+            startX = this.positions.subnets.private.x + 40;
+            startY = this.positions.subnets.private.y + 120;
+        } else {
+            // Horizontal layout - original spacing
+            expertCols = 3;
+            expertRows = 2;
+            expertSpacing = { x: subnetWidth/4, y: subnetHeight/4 };
+            startX = this.positions.subnets.private.x + 40;
+            startY = this.positions.subnets.private.y + 150 + 5;
+        }
         
         ['clarity', 'grammar', 'documentation', 'structure', 'granularity'].forEach((expert, i) => {
             const col = i % expertCols;
@@ -195,18 +237,34 @@ class InfrastructureVisualization {
             };
         });
         
-        // Position non-ML experts
-        this.positions.instances.tooling = {
-            x: this.positions.subnets.private.x + 50,
-            y: this.positions.subnets.private.y + subnetHeight - 80 + 5,
-            subnet: 'private'
-        };
-        
-        this.positions.instances.repetition = {
-            x: this.positions.subnets.private.x + subnetWidth - 80,
-            y: this.positions.subnets.private.y + subnetHeight - 80 + 5,
-            subnet: 'private'
-        };
+        // Position non-ML experts - adjust for layout
+        if (this.isVerticalLayout) {
+            // Vertical layout - position at bottom of private subnet
+            this.positions.instances.tooling = {
+                x: this.positions.subnets.private.x + 60,
+                y: this.positions.subnets.private.y + subnetHeight - 60,
+                subnet: 'private'
+            };
+            
+            this.positions.instances.repetition = {
+                x: this.positions.subnets.private.x + subnetWidth - 60,
+                y: this.positions.subnets.private.y + subnetHeight - 60,
+                subnet: 'private'
+            };
+        } else {
+            // Horizontal layout - original positions
+            this.positions.instances.tooling = {
+                x: this.positions.subnets.private.x + 50,
+                y: this.positions.subnets.private.y + subnetHeight - 80 + 5,
+                subnet: 'private'
+            };
+            
+            this.positions.instances.repetition = {
+                x: this.positions.subnets.private.x + subnetWidth - 80,
+                y: this.positions.subnets.private.y + subnetHeight - 80 + 5,
+                subnet: 'private'
+            };
+        }
     }
     
     renderVisualization() {
