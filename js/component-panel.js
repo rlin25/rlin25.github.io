@@ -83,12 +83,16 @@ class ComponentDetailPanel {
         this.currentComponent = componentData;
         this.populateContent(componentData);
         
-        // Show overlay
+        // Remove overlay (no longer needed)
         this.overlay
-            .style('visibility', 'visible')
+            .style('visibility', 'hidden')
+            .style('opacity', '0');
+        
+        // Resize main content to make room for sidebar
+        d3.select('body')
             .transition()
             .duration(400)
-            .style('opacity', '1');
+            .style('margin-right', '400px');
         
         // Show sidebar
         this.panel
@@ -97,17 +101,19 @@ class ComponentDetailPanel {
             .style('right', '0px');
             
         this.isVisible = true;
+        
+        // Trigger window resize event to update D3 visualization
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 450);
     }
     
     hide() {
-        // Hide overlay
-        this.overlay
+        // Reset main content width
+        d3.select('body')
             .transition()
             .duration(400)
-            .style('opacity', '0')
-            .on('end', () => {
-                this.overlay.style('visibility', 'hidden');
-            });
+            .style('margin-right', '0px');
         
         // Hide sidebar
         this.panel
@@ -120,6 +126,11 @@ class ComponentDetailPanel {
         // Clear connection animations
         d3.selectAll('.connection-line').classed('animated', false);
         d3.selectAll('.connection-particle').remove();
+        
+        // Trigger window resize event to update D3 visualization
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 450);
     }
     
     populateContent(component) {

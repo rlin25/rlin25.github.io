@@ -709,6 +709,102 @@ class InfrastructureVisualization {
         }
     }
     
+    updateDimensions(newWidth, newHeight) {
+        // Update internal dimensions
+        const aspectRatio = this.width / this.height;
+        this.width = Math.max(400, newWidth - 40); // Minimum width with padding
+        this.height = Math.max(300, newHeight || this.width / aspectRatio);
+        
+        console.log('Updating D3 dimensions to:', this.width, 'x', this.height);
+        
+        // Update SVG viewBox
+        this.svg.attr('viewBox', `0 0 ${this.width} ${this.height}`);
+        
+        // Update scales
+        this.setupScales();
+        
+        // Recalculate positions
+        this.calculatePositions();
+        
+        // Update all visual elements
+        this.updateVisualizationLayout();
+    }
+    
+    updateVisualizationLayout() {
+        // Update VPC boundary
+        const vpcRect = this.layers.vpc.select('.vpc-boundary');
+        if (!vpcRect.empty()) {
+            vpcRect
+                .attr('x', this.positions.vpc.x)
+                .attr('y', this.positions.vpc.y)
+                .attr('width', this.positions.vpc.width)
+                .attr('height', this.positions.vpc.height);
+        }
+        
+        // Update VPC label
+        const vpcLabel = this.layers.labels.select('.vpc-label');
+        if (!vpcLabel.empty()) {
+            vpcLabel
+                .attr('x', this.positions.vpc.x + 10)
+                .attr('y', this.positions.vpc.y - 10);
+        }
+        
+        // Update subnets
+        Object.entries(this.positions.subnets).forEach(([type, pos]) => {
+            const subnet = this.layers.subnets.select(`.subnet-${type}`);
+            if (!subnet.empty()) {
+                subnet
+                    .attr('x', pos.x)
+                    .attr('y', pos.y)
+                    .attr('width', pos.width)
+                    .attr('height', pos.height);
+            }
+        });
+        
+        // Update subnet labels
+        this.data.vpc.subnets.forEach(subnet => {
+            const pos = this.positions.subnets[subnet.type];
+            if (pos) {
+                const subnetLabel = this.layers.labels.select(`.subnet-label`);
+                // Update subnet label positions if needed
+            }
+        });
+        
+        // Update instances positions
+        this.data.instances.forEach(instance => {
+            const pos = this.positions.instances[instance.id];
+            if (pos) {
+                const instanceGroup = this.layers.instances.select(`[data-id="${instance.id}"]`);
+                if (!instanceGroup.empty()) {
+                    instanceGroup.attr('transform', `translate(${pos.x}, ${pos.y})`);
+                }
+                
+                // Update labels
+                this.updateInstanceLabels(instance.id, pos.x, pos.y);
+            }
+        });
+        
+        // Update connections
+        this.data.connections.forEach(conn => {
+            const sourcePos = this.positions.instances[conn.source];
+            const targetPos = this.positions.instances[conn.target];
+            
+            if (sourcePos && targetPos) {
+                const line = this.layers.connections.select(`#line-${conn.id}`);
+                if (!line.empty()) {
+                    line
+                        .attr('x1', sourcePos.x)
+                        .attr('y1', sourcePos.y)
+                        .attr('x2', targetPos.x)
+                        .attr('y2', targetPos.y);
+                }
+            }
+        });
+        
+        // Update security groups
+        this.updateSecurityGroups();
+    }
+    
     showAllConnections() {
         this.data.connections.forEach(conn => {
             const line = d3.select(`#line-${conn.id}`);

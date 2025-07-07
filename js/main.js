@@ -54,11 +54,16 @@ function setupResponsiveDesign() {
                 // Re-calculate positions for responsive design
                 const container = document.getElementById('d3-container');
                 if (container) {
-                    const containerWidth = container.getBoundingClientRect().width;
+                    const containerRect = container.getBoundingClientRect();
+                    const containerWidth = containerRect.width;
+                    
+                    console.log('Resizing visualization to width:', containerWidth);
+                    
+                    // Update visualization dimensions
+                    window.infrastructureViz.updateDimensions(containerWidth, containerRect.height);
                     
                     // Adjust visualization for mobile
                     if (containerWidth < 768) {
-                        // Mobile adjustments could be added here
                         console.log('Adjusting for mobile viewport');
                     }
                 }
