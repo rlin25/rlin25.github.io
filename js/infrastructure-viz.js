@@ -146,8 +146,8 @@ class InfrastructureVisualization {
                 subnet: 'public'
             },
             orchestrator: {
-                x: this.positions.subnets.private.x + subnetWidth/2,
-                y: this.positions.subnets.private.y + 60,
+                x: this.positions.subnets.private.x + subnetWidth/2 + 15,
+                y: this.positions.subnets.private.y + 60 + 5,
                 subnet: 'private'
             }
         };
