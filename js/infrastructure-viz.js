@@ -318,8 +318,6 @@ class InfrastructureVisualization {
             const pos = this.positions.instances[instance.id];
             if (!pos) return;
             
-            console.log('Creating instance:', instance.id, 'at position:', pos);
-            
             const instanceGroup = this.layers.instances.append('g')
                 .attr('class', 'instance')
                 .attr('data-id', instance.id)
@@ -333,9 +331,7 @@ class InfrastructureVisualization {
                 .on('click', this.onComponentClick.bind(this));
             
             // Add drag behavior
-            console.log('About to add drag behavior for:', instance.id);
             instanceGroup.call(this.setupDragBehavior(instance));
-            console.log('Drag behavior added for:', instance.id);
             
             // Instance circle
             instanceGroup.append('circle')
@@ -365,6 +361,7 @@ class InfrastructureVisualization {
             
             // Instance name
             this.layers.labels.append('text')
+                .attr('id', `label-name-${instance.id}`)
                 .attr('x', pos.x)
                 .attr('y', pos.y + 40)
                 .attr('class', 'instance-label')
@@ -378,6 +375,7 @@ class InfrastructureVisualization {
             // Port number for experts
             if (instance.port) {
                 this.layers.labels.append('text')
+                    .attr('id', `label-port-${instance.id}`)
                     .attr('x', pos.x)
                     .attr('y', pos.y + 52)
                     .attr('class', 'port-label')
@@ -390,6 +388,7 @@ class InfrastructureVisualization {
             
             // Private IP
             this.layers.labels.append('text')
+                .attr('id', `label-ip-${instance.id}`)
                 .attr('x', pos.x)
                 .attr('y', pos.y + (instance.port ? 64 : 52))
                 .attr('class', 'ip-label')
@@ -414,12 +413,8 @@ class InfrastructureVisualization {
     setupDragBehavior(instance) {
         const self = this;
         
-        console.log('Setting up drag behavior for:', instance.id);
-        
         return d3.drag()
             .on('start', function(event, d) {
-                console.log('DRAG START for:', instance.id, 'event:', event);
-                
                 // Change cursor and add dragging class
                 d3.select(this)
                     .style('cursor', 'grabbing')
@@ -429,20 +424,15 @@ class InfrastructureVisualization {
                 d3.select(this).interrupt();
             })
             .on('drag', function(event, d) {
-                console.log('DRAGGING:', instance.id, 'to:', event.x, event.y);
-                
                 const newX = event.x;
                 const newY = event.y;
                 
                 // Get subnet boundaries for this instance
                 const constraints = self.getSubnetConstraints(instance);
-                console.log('Constraints for', instance.id, ':', constraints);
                 
                 // Constrain position within subnet boundaries
                 const constrainedX = Math.max(constraints.minX, Math.min(constraints.maxX, newX));
                 const constrainedY = Math.max(constraints.minY, Math.min(constraints.maxY, newY));
-                
-                console.log('Constrained position:', constrainedX, constrainedY);
                 
                 // Update position
                 d3.select(this)
@@ -457,15 +447,18 @@ class InfrastructureVisualization {
                 
                 // Update connection lines
                 self.updateConnectionLines(instance.id, constrainedX, constrainedY);
+                
+                // Update labels that follow this instance
+                self.updateInstanceLabels(instance.id, constrainedX, constrainedY);
+                
+                // Update security groups
+                self.updateSecurityGroups();
             })
             .on('end', function(event, d) {
                 // Reset cursor and remove dragging class
                 d3.select(this)
                     .style('cursor', 'grab')
                     .classed('dragging', false);
-                    
-                console.log('Drag end for:', instance.id, 'at position:', 
-                    self.positions.instances[instance.id]);
             });
     }
     
@@ -506,6 +499,37 @@ class InfrastructureVisualization {
                 line.attr('x2', newX).attr('y2', newY);
             }
         });
+    }
+    
+    updateInstanceLabels(instanceId, newX, newY) {
+        const instance = this.data.instances.find(i => i.id === instanceId);
+        if (!instance) return;
+        
+        // Update instance name label
+        d3.select(`#label-name-${instanceId}`)
+            .attr('x', newX)
+            .attr('y', newY + 40);
+        
+        // Update port label if it exists
+        if (instance.port) {
+            d3.select(`#label-port-${instanceId}`)
+                .attr('x', newX)
+                .attr('y', newY + 52);
+        }
+        
+        // Update IP label
+        d3.select(`#label-ip-${instanceId}`)
+            .attr('x', newX)
+            .attr('y', newY + (instance.port ? 64 : 52));
+    }
+    
+    updateSecurityGroups() {
+        // Clear existing security groups and their labels
+        this.layers.securityGroups.selectAll('*').remove();
+        this.layers.labels.selectAll('.sg-label').remove();
+        
+        // Re-render security groups with updated positions
+        this.renderSecurityGroups();
     }
     
     
