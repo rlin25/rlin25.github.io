@@ -304,8 +304,17 @@ code {
 }
 
 .instance {
-    cursor: pointer;
+    cursor: grab;
     /* Removed conflicting CSS transform - handled by D3.js */
+}
+
+.instance.dragging {
+    cursor: grabbing;
+    opacity: 0.8;
+}
+
+.instance:active {
+    cursor: grabbing;
 }
 
 .instance-circle {

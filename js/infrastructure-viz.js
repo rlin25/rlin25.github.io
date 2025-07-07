@@ -322,10 +322,11 @@ class InfrastructureVisualization {
                 .attr('class', 'instance')
                 .attr('data-id', instance.id)
                 .attr('transform', `translate(${pos.x}, ${pos.y})`)
-                .style('cursor', 'pointer')
+                .style('cursor', 'grab')
                 .on('mouseenter', this.onComponentHover.bind(this))
                 .on('mouseleave', this.onComponentLeave.bind(this))
-                .on('click', this.onComponentClick.bind(this));
+                .on('click', this.onComponentClick.bind(this))
+                .call(this.setupDragBehavior(instance));
             
             // Instance circle
             instanceGroup.append('circle')
@@ -401,25 +402,106 @@ class InfrastructureVisualization {
         return icons[type] || '?';
     }
     
+    setupDragBehavior(instance) {
+        const self = this;
+        
+        return d3.drag()
+            .on('start', function(event, d) {
+                // Change cursor and add dragging class
+                d3.select(this)
+                    .style('cursor', 'grabbing')
+                    .classed('dragging', true);
+                    
+                // Stop any ongoing transitions
+                d3.select(this).interrupt();
+                
+                console.log('Drag start for:', instance.id);
+            })
+            .on('drag', function(event, d) {
+                const newX = event.x;
+                const newY = event.y;
+                
+                // Get subnet boundaries for this instance
+                const constraints = self.getSubnetConstraints(instance);
+                
+                // Constrain position within subnet boundaries
+                const constrainedX = Math.max(constraints.minX, Math.min(constraints.maxX, newX));
+                const constrainedY = Math.max(constraints.minY, Math.min(constraints.maxY, newY));
+                
+                // Update position
+                d3.select(this)
+                    .attr('transform', `translate(${constrainedX}, ${constrainedY})`);
+                
+                // Update stored position
+                self.positions.instances[instance.id] = {
+                    x: constrainedX,
+                    y: constrainedY,
+                    subnet: instance.subnet
+                };
+                
+                // Update connection lines
+                self.updateConnectionLines(instance.id, constrainedX, constrainedY);
+            })
+            .on('end', function(event, d) {
+                // Reset cursor and remove dragging class
+                d3.select(this)
+                    .style('cursor', 'grab')
+                    .classed('dragging', false);
+                    
+                console.log('Drag end for:', instance.id, 'at position:', 
+                    self.positions.instances[instance.id]);
+            });
+    }
+    
+    getSubnetConstraints(instance) {
+        // Define padding from subnet edges
+        const padding = 40;
+        const instanceRadius = 25;
+        
+        // Get the appropriate subnet boundaries
+        let subnetBounds;
+        if (instance.subnet === 'public') {
+            subnetBounds = this.positions.subnets.public;
+        } else if (instance.subnet === 'private' || instance.subnet === 'private-2') {
+            subnetBounds = this.positions.subnets.private;
+        } else {
+            // Default to private subnet
+            subnetBounds = this.positions.subnets.private;
+        }
+        
+        return {
+            minX: subnetBounds.x + padding + instanceRadius,
+            maxX: subnetBounds.x + subnetBounds.width - padding - instanceRadius,
+            minY: subnetBounds.y + padding + instanceRadius,
+            maxY: subnetBounds.y + subnetBounds.height - padding - instanceRadius
+        };
+    }
+    
+    updateConnectionLines(instanceId, newX, newY) {
+        // Update all connections involving this instance
+        this.data.connections.forEach(conn => {
+            const line = d3.select(`#line-${conn.id}`);
+            
+            if (conn.source === instanceId) {
+                // Update source position
+                line.attr('x1', newX).attr('y1', newY);
+            } else if (conn.target === instanceId) {
+                // Update target position  
+                line.attr('x2', newX).attr('y2', newY);
+            }
+        });
+    }
+    
     
     onComponentHover(event, d) {
         const component = d3.select(event.currentTarget);
         const componentId = component.attr('data-id');
         const pos = this.positions.instances[componentId];
         
-        // Debug logging
-        console.log('Hover - componentId:', componentId);
-        console.log('Hover - pos:', pos);
-        console.log('Hover - all positions:', this.positions.instances);
+        if (!pos) return;
         
-        if (!pos) {
-            console.error('Position not found for component:', componentId);
-            return;
-        }
-        
-        // Get current transform and parse it to preserve original position
-        const currentTransform = component.attr('transform');
-        console.log('Current transform:', currentTransform);
+        // Don't apply hover effects if currently dragging
+        if (component.classed('dragging')) return;
         
         // Apply scale while preserving position
         component
@@ -430,9 +512,6 @@ class InfrastructureVisualization {
         
         // Show connection previews
         this.showConnectionPreviews(componentId);
-        
-        // Update cursor
-        component.style('cursor', 'pointer');
     }
     
     onComponentLeave(event, d) {
@@ -440,10 +519,10 @@ class InfrastructureVisualization {
         const componentId = component.attr('data-id');
         const pos = this.positions.instances[componentId];
         
-        if (!pos) {
-            console.error('Position not found for component:', componentId);
-            return;
-        }
+        if (!pos) return;
+        
+        // Don't reset hover effects if currently dragging
+        if (component.classed('dragging')) return;
         
         // Reset to original transform
         component
