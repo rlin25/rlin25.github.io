@@ -9,6 +9,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('Infrastructure visualization initialized successfully');
         
+        // Force initial resize to ensure proper scaling
+        setTimeout(() => {
+            const container = document.getElementById('d3-container');
+            if (container) {
+                const containerRect = container.getBoundingClientRect();
+                console.log('Initial container size:', containerRect.width, 'x', containerRect.height);
+                window.infrastructureViz.updateDimensions(containerRect.width, containerRect.height);
+            }
+        }, 100);
+        
         // Add performance tracking
         if (window.performance && window.performance.mark) {
             window.performance.mark('infrastructure-viz-loaded');

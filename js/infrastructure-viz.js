@@ -737,10 +737,13 @@ class InfrastructureVisualization {
     updateDimensions(newWidth, newHeight) {
         // Update internal dimensions
         const aspectRatio = this.width / this.height;
+        const oldWidth = this.width;
+        const oldHeight = this.height;
+        
         this.width = Math.max(400, newWidth - 40); // Minimum width with padding
         this.height = Math.max(300, newHeight || this.width / aspectRatio);
         
-        console.log('Updating D3 dimensions to:', this.width, 'x', this.height);
+        console.log('Updating D3 dimensions from:', oldWidth, 'x', oldHeight, 'to:', this.width, 'x', this.height);
         
         // Update SVG viewBox
         this.svg.attr('viewBox', `0 0 ${this.width} ${this.height}`);
@@ -748,8 +751,10 @@ class InfrastructureVisualization {
         // Update scales
         this.setupScales();
         
-        // Recalculate positions
+        // Recalculate positions and scaling factors
         this.calculatePositions();
+        
+        console.log('New scale factor:', this.scaleFactor, 'Node radius:', this.nodeRadius);
         
         // Update all visual elements
         this.updateVisualizationLayout();
@@ -771,7 +776,8 @@ class InfrastructureVisualization {
         if (!vpcLabel.empty()) {
             vpcLabel
                 .attr('x', this.positions.vpc.x + 10)
-                .attr('y', this.positions.vpc.y - 10);
+                .attr('y', this.positions.vpc.y - 10)
+                .style('font-size', `${this.fontSize.vpcLabel}px`);
         }
         
         // Update subnets
@@ -786,12 +792,29 @@ class InfrastructureVisualization {
             }
         });
         
-        // Update subnet labels
+        // Update subnet labels with responsive font sizes
         this.data.vpc.subnets.forEach(subnet => {
             const pos = this.positions.subnets[subnet.type];
             if (pos) {
-                const subnetLabel = this.layers.labels.select(`.subnet-label`);
-                // Update subnet label positions if needed
+                // Update subnet name labels
+                this.layers.labels.selectAll('.subnet-label')
+                    .filter(function() {
+                        const x = d3.select(this).attr('x');
+                        return Math.abs(x - (pos.x + 10)) < 5; // Match by position
+                    })
+                    .attr('x', pos.x + 10)
+                    .attr('y', pos.y + 20)
+                    .style('font-size', `${this.fontSize.subnetLabel}px`);
+                
+                // Update subnet CIDR labels
+                this.layers.labels.selectAll('.subnet-cidr')
+                    .filter(function() {
+                        const x = d3.select(this).attr('x');
+                        return Math.abs(x - (pos.x + 10)) < 5; // Match by position
+                    })
+                    .attr('x', pos.x + 10)
+                    .attr('y', pos.y + 35)
+                    .style('font-size', `${this.fontSize.subnetCidr}px`);
             }
         });
         
