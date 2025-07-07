@@ -322,11 +322,16 @@ class InfrastructureVisualization {
                 .attr('class', 'instance')
                 .attr('data-id', instance.id)
                 .attr('transform', `translate(${pos.x}, ${pos.y})`)
-                .style('cursor', 'grab')
+                .style('cursor', 'grab');
+            
+            // Add event handlers
+            instanceGroup
                 .on('mouseenter', this.onComponentHover.bind(this))
                 .on('mouseleave', this.onComponentLeave.bind(this))
-                .on('click', this.onComponentClick.bind(this))
-                .call(this.setupDragBehavior(instance));
+                .on('click', this.onComponentClick.bind(this));
+            
+            // Add drag behavior
+            instanceGroup.call(this.setupDragBehavior(instance));
             
             // Instance circle
             instanceGroup.append('circle')
@@ -405,8 +410,12 @@ class InfrastructureVisualization {
     setupDragBehavior(instance) {
         const self = this;
         
+        console.log('Setting up drag behavior for:', instance.id);
+        
         return d3.drag()
             .on('start', function(event, d) {
+                console.log('DRAG START for:', instance.id, 'event:', event);
+                
                 // Change cursor and add dragging class
                 d3.select(this)
                     .style('cursor', 'grabbing')
@@ -414,19 +423,22 @@ class InfrastructureVisualization {
                     
                 // Stop any ongoing transitions
                 d3.select(this).interrupt();
-                
-                console.log('Drag start for:', instance.id);
             })
             .on('drag', function(event, d) {
+                console.log('DRAGGING:', instance.id, 'to:', event.x, event.y);
+                
                 const newX = event.x;
                 const newY = event.y;
                 
                 // Get subnet boundaries for this instance
                 const constraints = self.getSubnetConstraints(instance);
+                console.log('Constraints for', instance.id, ':', constraints);
                 
                 // Constrain position within subnet boundaries
                 const constrainedX = Math.max(constraints.minX, Math.min(constraints.maxX, newX));
                 const constrainedY = Math.max(constraints.minY, Math.min(constraints.maxY, newY));
+                
+                console.log('Constrained position:', constrainedX, constrainedY);
                 
                 // Update position
                 d3.select(this)
