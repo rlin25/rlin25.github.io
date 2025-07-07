@@ -86,12 +86,11 @@ class ComponentDetailPanel {
         this.currentComponent = componentData;
         this.populateContent(componentData);
         
-        // Resize main content to make room for sidebar with 10px buffer on each side
+        // Resize main content to make room for sidebar
         d3.select('body')
             .transition()
             .duration(400)
-            .style('margin-left', '10px')
-            .style('margin-right', '410px'); // 400px sidebar + 10px buffer
+            .style('margin-right', '400px');
         
         // Show sidebar
         this.panel
@@ -112,7 +111,6 @@ class ComponentDetailPanel {
         d3.select('body')
             .transition()
             .duration(400)
-            .style('margin-left', '0px')
             .style('margin-right', '0px');
         
         // Hide sidebar
