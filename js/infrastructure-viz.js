@@ -11,7 +11,6 @@ class InfrastructureVisualization {
         this.setupScales();
         this.calculatePositions();
         this.renderVisualization();
-        this.setupInteractivity();
     }
     
     setupSVG() {
@@ -322,7 +321,11 @@ class InfrastructureVisualization {
             const instanceGroup = this.layers.instances.append('g')
                 .attr('class', 'instance')
                 .attr('data-id', instance.id)
-                .attr('transform', `translate(${pos.x}, ${pos.y})`);
+                .attr('transform', `translate(${pos.x}, ${pos.y})`)
+                .style('cursor', 'pointer')
+                .on('mouseenter', this.onComponentHover.bind(this))
+                .on('mouseleave', this.onComponentLeave.bind(this))
+                .on('click', this.onComponentClick.bind(this));
             
             // Instance circle
             instanceGroup.append('circle')
@@ -398,13 +401,6 @@ class InfrastructureVisualization {
         return icons[type] || '?';
     }
     
-    setupInteractivity() {
-        // Component hover handlers
-        this.layers.instances.selectAll('.instance')
-            .on('mouseenter', this.onComponentHover.bind(this))
-            .on('mouseleave', this.onComponentLeave.bind(this))
-            .on('click', this.onComponentClick.bind(this));
-    }
     
     onComponentHover(event, d) {
         const component = d3.select(event.currentTarget);
