@@ -46,7 +46,7 @@ const infrastructureData = {
       color: "#2196f3",
       publicIp: "18.189.35.55",
       privateIp: "172.31.24.xxx",
-      securityGroup: "sg-bastion-public",
+      securityGroup: "sg-webapp-public",
       keyFile: "frizzlesrubric-key-10.pem",
       ports: [22, 80, 443, 8080],
       instanceType: "t3.medium"
@@ -183,19 +183,33 @@ const infrastructureData = {
   securityGroups: [
     {
       id: "sg-bastion-public",
-      name: "Public Security Group",
+      name: "Bastion Public Security Group",
       color: "#f57c00",
-      instances: ["bastion", "webapp"],
+      instances: ["bastion"],
       inbound: [
         { type: "SSH", port: 22, source: "Custom IP set", description: "SSH access from developer IPs" },
-        { type: "SSH", port: 22, source: "sg-bastion-public", description: "SSH from bastion to webapp" },
-        { type: "HTTP", port: 80, source: "0.0.0.0/0", description: "HTTP traffic from internet" },
-        { type: "HTTPS", port: 443, source: "0.0.0.0/0", description: "HTTPS traffic from internet" },
-        { type: "Custom TCP", port: 8080, source: "0.0.0.0/0", description: "Web app port from internet" }
+        { type: "HTTP", port: 80, source: "0.0.0.0/0", description: "HTTP traffic" },
+        { type: "HTTPS", port: 443, source: "0.0.0.0/0", description: "HTTPS traffic" }
       ],
       outbound: [
         { type: "All Traffic", destination: "172.31.0.0/16", description: "VPC internal communication" },
         { type: "SSH", port: 22, destination: "sg-private", description: "SSH to private instances" },
+        { type: "SSH", port: 22, destination: "sg-webapp-public", description: "SSH to webapp" }
+      ]
+    },
+    {
+      id: "sg-webapp-public",
+      name: "Webapp Public Security Group",
+      color: "#2196f3",
+      instances: ["webapp"],
+      inbound: [
+        { type: "SSH", port: 22, source: "sg-bastion-public", description: "SSH from bastion host" },
+        { type: "HTTP", port: 80, source: "0.0.0.0/0", description: "HTTP traffic from internet" },
+        { type: "HTTPS", port: 443, source: "0.0.0.0/0", description: "HTTPS traffic from internet" },
+        { type: "Custom TCP", port: 8080, source: "0.0.0.0/0", description: "Web application port from internet" }
+      ],
+      outbound: [
+        { type: "All Traffic", destination: "0.0.0.0/0", description: "Internet access" },
         { type: "Custom TCP", port: 8000, destination: "172.31.48.224/32", description: "API calls to orchestrator" }
       ]
     },
@@ -206,7 +220,8 @@ const infrastructureData = {
       instances: ["orchestrator", "clarity", "grammar", "documentation", "structure", "granularity", "tooling", "repetition"],
       inbound: [
         { type: "SSH", port: 22, source: "sg-bastion-public", description: "SSH from bastion host" },
-        { type: "Custom TCP", port: "8003-8009", source: "172.31.48.224/32", description: "API access from orchestrator" }
+        { type: "Custom TCP", port: "8003-8009", source: "172.31.48.224/32", description: "API access from orchestrator" },
+        { type: "Custom TCP", port: 8000, source: "sg-webapp-public", description: "API access from webapp" }
       ],
       outbound: [
         { type: "All Traffic", destination: "0.0.0.0/0", description: "Internet access for updates" }
