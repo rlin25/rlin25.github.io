@@ -409,12 +409,15 @@ class InfrastructureVisualization {
     onComponentHover(event, d) {
         const component = d3.select(event.currentTarget);
         const componentId = component.attr('data-id');
+        const pos = this.positions.instances[componentId];
         
-        // Elevate component
+        if (!pos) return;
+        
+        // Scale using SVG transform instead of CSS
         component
             .transition()
             .duration(200)
-            .style('transform', 'scale(1.1)')
+            .attr('transform', `translate(${pos.x}, ${pos.y}) scale(1.1)`)
             .style('filter', 'url(#glow)');
         
         // Show connection previews
@@ -426,12 +429,16 @@ class InfrastructureVisualization {
     
     onComponentLeave(event, d) {
         const component = d3.select(event.currentTarget);
+        const componentId = component.attr('data-id');
+        const pos = this.positions.instances[componentId];
         
-        // Reset elevation
+        if (!pos) return;
+        
+        // Reset to original transform
         component
             .transition()
             .duration(200)
-            .style('transform', 'scale(1)')
+            .attr('transform', `translate(${pos.x}, ${pos.y}) scale(1)`)
             .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))');
         
         // Hide connection previews
@@ -556,17 +563,19 @@ class InfrastructureVisualization {
     // Public methods for accessibility controls
     focusComponent(componentId) {
         const component = this.layers.instances.select(`[data-id="${componentId}"]`);
-        if (!component.empty()) {
+        const pos = this.positions.instances[componentId];
+        
+        if (!component.empty() && pos) {
             this.animateConnections(componentId, 1);
             
-            // Highlight the component
+            // Highlight the component using SVG transform
             component
                 .transition()
                 .duration(500)
-                .style('transform', 'scale(1.2)')
+                .attr('transform', `translate(${pos.x}, ${pos.y}) scale(1.2)`)
                 .transition()
                 .duration(300)
-                .style('transform', 'scale(1)');
+                .attr('transform', `translate(${pos.x}, ${pos.y}) scale(1)`);
         }
     }
     
