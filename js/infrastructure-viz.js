@@ -142,12 +142,12 @@ class InfrastructureVisualization {
         this.positions.instances = {
             bastion: {
                 x: this.positions.subnets.public.x + subnetWidth/2,
-                y: this.positions.subnets.public.y + subnetHeight/2,
+                y: this.positions.subnets.public.y + subnetHeight/2 + 5,
                 subnet: 'public'
             },
             orchestrator: {
                 x: this.positions.subnets.private.x + subnetWidth/2 + 30,
-                y: this.positions.subnets.private.y + 60 + 10,
+                y: this.positions.subnets.private.y + 60 + 10 + 5,
                 subnet: 'private'
             }
         };
@@ -157,7 +157,7 @@ class InfrastructureVisualization {
         const expertRows = 2;
         const expertSpacing = { x: subnetWidth/4, y: subnetHeight/4 };
         const startX = this.positions.subnets.private.x + 40;
-        const startY = this.positions.subnets.private.y + 150;
+        const startY = this.positions.subnets.private.y + 150 + 5;
         
         ['clarity', 'grammar', 'documentation', 'structure', 'granularity'].forEach((expert, i) => {
             const col = i % expertCols;
@@ -173,13 +173,13 @@ class InfrastructureVisualization {
         // Position non-ML experts
         this.positions.instances.tooling = {
             x: this.positions.subnets.private.x + 50,
-            y: this.positions.subnets.private.y + subnetHeight - 80,
+            y: this.positions.subnets.private.y + subnetHeight - 80 + 5,
             subnet: 'private'
         };
         
         this.positions.instances.repetition = {
             x: this.positions.subnets.private.x + subnetWidth - 80,
-            y: this.positions.subnets.private.y + subnetHeight - 80,
+            y: this.positions.subnets.private.y + subnetHeight - 80 + 5,
             subnet: 'private'
         };
     }
