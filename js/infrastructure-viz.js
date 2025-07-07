@@ -318,6 +318,8 @@ class InfrastructureVisualization {
             const pos = this.positions.instances[instance.id];
             if (!pos) return;
             
+            console.log('Creating instance:', instance.id, 'at position:', pos);
+            
             const instanceGroup = this.layers.instances.append('g')
                 .attr('class', 'instance')
                 .attr('data-id', instance.id)
@@ -331,7 +333,9 @@ class InfrastructureVisualization {
                 .on('click', this.onComponentClick.bind(this));
             
             // Add drag behavior
+            console.log('About to add drag behavior for:', instance.id);
             instanceGroup.call(this.setupDragBehavior(instance));
+            console.log('Drag behavior added for:', instance.id);
             
             // Instance circle
             instanceGroup.append('circle')
