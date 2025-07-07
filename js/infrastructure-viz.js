@@ -516,9 +516,6 @@ class InfrastructureVisualization {
                 d3.select(this)
                     .style('cursor', 'grabbing')
                     .classed('dragging', true);
-                    
-                // Stop any ongoing transitions
-                d3.select(this).interrupt();
             })
             .on('drag', function(event, d) {
                 const newX = event.x;
@@ -677,10 +674,7 @@ class InfrastructureVisualization {
         const componentId = d3.select(event.currentTarget).attr('data-id');
         const instanceData = this.data.instances.find(i => i.id === componentId);
         
-        // Trigger full connection animation
-        this.animateConnections(componentId, 1);
-        
-        // Show detail panel (will be implemented in component-panel.js)
+        // Show detail panel
         if (window.componentDetailPanel) {
             window.componentDetailPanel.show(instanceData);
         }
@@ -704,54 +698,6 @@ class InfrastructureVisualization {
             .style('stroke-width', 2);
     }
     
-    animateConnections(componentId, depth = 1) {
-        const connections = this.getConnectionsAtDepth(componentId, depth);
-        
-        // Clear previous animations
-        d3.selectAll('.connection-line').classed('animated', false);
-        d3.selectAll('.connection-particle').remove();
-        
-        connections.forEach(connection => {
-            const line = d3.select(`#line-${connection.id}`);
-            line.classed('animated', true)
-               .style('stroke-opacity', 1)
-               .style('stroke-width', 3);
-               
-            // Add animated particles for API connections
-            if (connection.type === 'api') {
-                this.animateDataFlow(connection);
-            }
-        });
-    }
-    
-    animateDataFlow(connection) {
-        const line = d3.select(`#line-${connection.id}`);
-        const x1 = parseFloat(line.attr('x1'));
-        const y1 = parseFloat(line.attr('y1'));
-        const x2 = parseFloat(line.attr('x2'));
-        const y2 = parseFloat(line.attr('y2'));
-        
-        // Create moving particles along line
-        for (let i = 0; i < 3; i++) {
-            setTimeout(() => {
-                const particle = this.svg.append('circle')
-                    .attr('class', 'connection-particle')
-                    .attr('r', 3)
-                    .attr('cx', x1)
-                    .attr('cy', y1)
-                    .style('fill', connection.type === 'api' ? '#7b1fa2' : '#f57c00')
-                    .style('opacity', 0.8);
-                
-                particle.transition()
-                    .duration(2000)
-                    .ease(d3.easeLinear)
-                    .attr('cx', x2)
-                    .attr('cy', y2)
-                    .style('opacity', 0)
-                    .remove();
-            }, i * 200);
-        }
-    }
     
     getDirectConnections(componentId) {
         return this.data.connections.filter(conn => 
@@ -759,33 +705,6 @@ class InfrastructureVisualization {
         );
     }
     
-    getConnectionsAtDepth(componentId, depth) {
-        const visited = new Set();
-        const connections = [];
-        
-        const traverse = (currentId, currentDepth) => {
-            if (currentDepth > depth || visited.has(currentId)) return;
-            visited.add(currentId);
-            
-            this.data.connections.forEach(conn => {
-                if (conn.source === currentId && !visited.has(conn.target)) {
-                    connections.push(conn);
-                    if (currentDepth < depth) {
-                        traverse(conn.target, currentDepth + 1);
-                    }
-                }
-                if (conn.target === currentId && !visited.has(conn.source)) {
-                    connections.push(conn);
-                    if (currentDepth < depth) {
-                        traverse(conn.source, currentDepth + 1);
-                    }
-                }
-            });
-        };
-        
-        traverse(componentId, 0);
-        return connections;
-    }
     
     updateDimensions(newWidth, newHeight) {
         // Update internal dimensions

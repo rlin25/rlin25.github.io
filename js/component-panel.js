@@ -121,10 +121,6 @@ class ComponentDetailPanel {
             
         this.isVisible = false;
         
-        // Clear connection animations
-        d3.selectAll('.connection-line').classed('animated', false);
-        d3.selectAll('.connection-particle').remove();
-        
         // Trigger window resize event to update D3 visualization
         setTimeout(() => {
             window.dispatchEvent(new Event('resize'));

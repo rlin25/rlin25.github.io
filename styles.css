@@ -313,10 +313,6 @@ code {
     stroke-dasharray: 3,3;
 }
 
-.connection-line.animated {
-    stroke-opacity: 1;
-    stroke-width: 3;
-}
 
 .connection-line.preview {
     stroke-opacity: 0.8;
