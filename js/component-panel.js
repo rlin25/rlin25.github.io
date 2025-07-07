@@ -9,21 +9,7 @@ class ComponentDetailPanel {
     }
     
     setupPanel() {
-        // Create overlay
-        this.overlay = this.container
-            .append('div')
-            .attr('class', 'sidebar-overlay')
-            .style('position', 'fixed')
-            .style('top', '0')
-            .style('left', '0')
-            .style('width', '100vw')
-            .style('height', '100vh')
-            .style('background', 'rgba(0, 0, 0, 0.3)')
-            .style('z-index', 999)
-            .style('opacity', '0')
-            .style('visibility', 'hidden')
-            .style('transition', 'opacity 0.4s ease, visibility 0.4s ease')
-            .on('click', () => this.hide());
+        // No overlay needed for side-by-side layout
             
         this.panel = this.container
             .append('div')
@@ -56,17 +42,34 @@ class ComponentDetailPanel {
             .style('position', 'absolute')
             .style('top', '20px')
             .style('right', '20px')
-            .style('background', 'none')
-            .style('border', 'none')
-            .style('font-size', '24px')
+            .style('background', '#f8f9fa')
+            .style('border', '1px solid #e9ecef')
+            .style('border-radius', '50%')
+            .style('width', '32px')
+            .style('height', '32px')
+            .style('font-size', '18px')
             .style('cursor', 'pointer')
             .style('color', '#666')
-            .style('transition', 'color 0.3s ease')
+            .style('transition', 'all 0.3s ease')
             .style('z-index', '1001')
+            .style('display', 'flex')
+            .style('align-items', 'center')
+            .style('justify-content', 'center')
             .text('×')
-            .on('click', () => this.hide())
-            .on('mouseenter', function() { d3.select(this).style('color', '#333'); })
-            .on('mouseleave', function() { d3.select(this).style('color', '#666'); });
+            .on('click', (event) => {
+                event.stopPropagation();
+                this.hide();
+            })
+            .on('mouseenter', function() { 
+                d3.select(this)
+                    .style('background', '#e9ecef')
+                    .style('color', '#333'); 
+            })
+            .on('mouseleave', function() { 
+                d3.select(this)
+                    .style('background', '#f8f9fa')
+                    .style('color', '#666'); 
+            });
             
         // Content container with scroll
         this.contentContainer = this.panel.append('div')
@@ -82,11 +85,6 @@ class ComponentDetailPanel {
     show(componentData) {
         this.currentComponent = componentData;
         this.populateContent(componentData);
-        
-        // Remove overlay (no longer needed)
-        this.overlay
-            .style('visibility', 'hidden')
-            .style('opacity', '0');
         
         // Resize main content to make room for sidebar
         d3.select('body')

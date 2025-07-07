@@ -57,7 +57,8 @@ function setupResponsiveDesign() {
                     const containerRect = container.getBoundingClientRect();
                     const containerWidth = containerRect.width;
                     
-                    console.log('Resizing visualization to width:', containerWidth);
+                    console.log('Resizing visualization - Container rect:', containerRect);
+                    console.log('New width:', containerWidth, 'New height:', containerRect.height);
                     
                     // Update visualization dimensions
                     window.infrastructureViz.updateDimensions(containerWidth, containerRect.height);
