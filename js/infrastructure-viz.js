@@ -322,24 +322,25 @@ class InfrastructureVisualization {
                 .style('stroke-width', 1)
                 .style('opacity', 0.7);
                 
-            // Subnet label
+            // Subnet label - positioned inside the colored rectangle at bottom
             this.layers.labels.append('text')
                 .attr('x', pos.x + 10)
-                .attr('y', pos.y + 20)
+                .attr('y', pos.y + pos.height - 25)
                 .attr('class', 'subnet-label')
                 .style('font-family', 'Inter, sans-serif')
                 .style('font-size', `${this.fontSize.subnetLabel}px`)
-                .style('font-weight', '500')
-                .style('fill', '#555')
+                .style('font-weight', '600')
+                .style('fill', type === 'public' ? '#1976d2' : '#388e3c')
                 .text(`${subnet.name || `${type} Subnet`}`);
                 
             this.layers.labels.append('text')
                 .attr('x', pos.x + 10)
-                .attr('y', pos.y + 35)
+                .attr('y', pos.y + pos.height - 8)
                 .attr('class', 'subnet-cidr')
                 .style('font-family', 'Consolas, monospace')
                 .style('font-size', `${this.fontSize.subnetCidr}px`)
-                .style('fill', '#777')
+                .style('fill', type === 'public' ? '#1976d2' : '#388e3c')
+                .style('font-weight', '500')
                 .text(subnet.cidr);
         });
     }
@@ -861,24 +862,24 @@ class InfrastructureVisualization {
         this.data.vpc.subnets.forEach(subnet => {
             const pos = this.positions.subnets[subnet.type];
             if (pos) {
-                // Update subnet name labels
+                // Update subnet name labels - positioned inside rectangle at bottom
                 this.layers.labels.selectAll('.subnet-label')
                     .filter(function() {
                         const x = d3.select(this).attr('x');
                         return Math.abs(x - (pos.x + 10)) < 5; // Match by position
                     })
                     .attr('x', pos.x + 10)
-                    .attr('y', pos.y + 20)
+                    .attr('y', pos.y + pos.height - 25)
                     .style('font-size', `${this.fontSize.subnetLabel}px`);
                 
-                // Update subnet CIDR labels
+                // Update subnet CIDR labels - positioned inside rectangle at bottom
                 this.layers.labels.selectAll('.subnet-cidr')
                     .filter(function() {
                         const x = d3.select(this).attr('x');
                         return Math.abs(x - (pos.x + 10)) < 5; // Match by position
                     })
                     .attr('x', pos.x + 10)
-                    .attr('y', pos.y + 35)
+                    .attr('y', pos.y + pos.height - 8)
                     .style('font-size', `${this.fontSize.subnetCidr}px`);
             }
         });
