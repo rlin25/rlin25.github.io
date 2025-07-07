@@ -379,15 +379,50 @@ code {
     fill: #666;
 }
 
-/* Detail Panel Styles */
+/* Detail Panel / Sidebar Styles */
 .detail-panel {
     font-family: 'Inter', sans-serif;
 }
 
+.detail-panel.sidebar {
+    border-radius: 0;
+}
+
+.sidebar-header {
+    position: sticky;
+    top: 0;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(15px);
+    z-index: 1001;
+}
+
+.sidebar-content {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 transparent;
+}
+
+.sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background-color: #a0aec0;
+}
+
 .detail-panel h2 {
     font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 0.5rem;
+    line-height: 1.2;
 }
 
 .detail-panel h3 {
@@ -397,9 +432,17 @@ code {
     color: #2c3e50;
 }
 
+.detail-panel h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #4a5568;
+}
+
 .detail-panel p {
     margin-bottom: 1rem;
     color: #666;
+    line-height: 1.6;
 }
 
 .technical-details ul {

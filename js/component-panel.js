@@ -9,65 +9,110 @@ class ComponentDetailPanel {
     }
     
     setupPanel() {
+        // Create overlay
+        this.overlay = this.container
+            .append('div')
+            .attr('class', 'sidebar-overlay')
+            .style('position', 'fixed')
+            .style('top', '0')
+            .style('left', '0')
+            .style('width', '100vw')
+            .style('height', '100vh')
+            .style('background', 'rgba(0, 0, 0, 0.3)')
+            .style('z-index', 999)
+            .style('opacity', '0')
+            .style('visibility', 'hidden')
+            .style('transition', 'opacity 0.4s ease, visibility 0.4s ease')
+            .on('click', () => this.hide());
+            
         this.panel = this.container
             .append('div')
-            .attr('class', 'detail-panel')
+            .attr('class', 'detail-panel sidebar')
             .style('position', 'fixed')
-            .style('top', '20px')
+            .style('top', '0')
             .style('right', '-400px')  // Hidden initially
-            .style('width', '380px')
-            .style('height', 'calc(100vh - 40px)')
-            .style('background', 'rgba(255, 255, 255, 0.95)')
-            .style('backdrop-filter', 'blur(10px)')
+            .style('width', '400px')
+            .style('height', '100vh')
+            .style('background', 'rgba(255, 255, 255, 0.98)')
+            .style('backdrop-filter', 'blur(15px)')
             .style('border-left', '1px solid #e0e0e0')
-            .style('box-shadow', '-4px 0 20px rgba(0,0,0,0.1)')
-            .style('padding', '20px')
-            .style('overflow-y', 'auto')
+            .style('box-shadow', '-8px 0 32px rgba(0,0,0,0.15)')
+            .style('padding', '0')
+            .style('overflow', 'hidden')
             .style('z-index', 1000)
-            .style('transition', 'right 0.3s ease-in-out')
+            .style('transition', 'right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)')
             .style('font-family', 'Inter, sans-serif');
             
+        // Sidebar header
+        const header = this.panel.append('div')
+            .attr('class', 'sidebar-header')
+            .style('padding', '20px 20px 0 20px')
+            .style('border-bottom', '1px solid #f0f0f0')
+            .style('margin-bottom', '0');
+            
         // Close button
-        this.panel.append('button')
+        header.append('button')
             .attr('class', 'close-btn')
             .style('position', 'absolute')
-            .style('top', '15px')
-            .style('right', '15px')
+            .style('top', '20px')
+            .style('right', '20px')
             .style('background', 'none')
             .style('border', 'none')
             .style('font-size', '24px')
             .style('cursor', 'pointer')
             .style('color', '#666')
             .style('transition', 'color 0.3s ease')
+            .style('z-index', '1001')
             .text('×')
             .on('click', () => this.hide())
             .on('mouseenter', function() { d3.select(this).style('color', '#333'); })
             .on('mouseleave', function() { d3.select(this).style('color', '#666'); });
             
-        // Global click handler to close panel
-        d3.select('body').on('click', (event) => {
-            if (this.isVisible && !this.panel.node().contains(event.target)) {
-                this.hide();
-            }
-        });
+        // Content container with scroll
+        this.contentContainer = this.panel.append('div')
+            .attr('class', 'sidebar-content')
+            .style('height', 'calc(100vh - 60px)')
+            .style('overflow-y', 'auto')
+            .style('padding', '20px')
+            .style('padding-top', '10px');
+            
+        // No need for global click handler since we have the overlay
     }
     
     show(componentData) {
         this.currentComponent = componentData;
         this.populateContent(componentData);
         
+        // Show overlay
+        this.overlay
+            .style('visibility', 'visible')
+            .transition()
+            .duration(400)
+            .style('opacity', '1');
+        
+        // Show sidebar
         this.panel
             .transition()
-            .duration(300)
+            .duration(400)
             .style('right', '0px');
             
         this.isVisible = true;
     }
     
     hide() {
+        // Hide overlay
+        this.overlay
+            .transition()
+            .duration(400)
+            .style('opacity', '0')
+            .on('end', () => {
+                this.overlay.style('visibility', 'hidden');
+            });
+        
+        // Hide sidebar
         this.panel
             .transition()
-            .duration(300)
+            .duration(400)
             .style('right', '-400px');
             
         this.isVisible = false;
@@ -79,9 +124,9 @@ class ComponentDetailPanel {
     
     populateContent(component) {
         // Clear existing content
-        this.panel.selectAll('.content').remove();
+        this.contentContainer.selectAll('.content').remove();
         
-        const content = this.panel.append('div').attr('class', 'content');
+        const content = this.contentContainer.append('div').attr('class', 'content');
         
         // Component header
         const header = content.append('div')
@@ -89,9 +134,10 @@ class ComponentDetailPanel {
             
         header.append('h2')
             .style('color', component.color)
-            .style('margin-bottom', '5px')
-            .style('font-size', '1.4rem')
-            .style('font-weight', '600')
+            .style('margin-bottom', '8px')
+            .style('font-size', '1.5rem')
+            .style('font-weight', '700')
+            .style('line-height', '1.2')
             .text(component.name);
             
         header.append('p')
