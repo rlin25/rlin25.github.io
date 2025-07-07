@@ -183,7 +183,7 @@ class ComponentDetailPanel {
         this.addComponentDetails(detailsList, component);
         
         // Configuration section
-        if (component.type === 'ml-expert' || component.type === 'orchestrator' || component.type === 'non-ml-expert') {
+        if (component.type === 'ml-expert' || component.type === 'orchestrator' || component.type === 'non-ml-expert' || component.type === 'webapp') {
             this.addConfigurationSection(content, component);
         }
         
@@ -199,6 +199,7 @@ class ComponentDetailPanel {
     getComponentPurpose(component) {
         const purposes = {
             'bastion': 'Secure SSH gateway providing controlled access to private subnet resources through ProxyJump configuration',
+            'webapp': 'Public-facing web application serving the FrizzlesRubric interface with direct API access to the orchestrator',
             'orchestrator': 'Central API coordinator managing async requests across all 7 evaluation experts with timeout handling',
             'clarity': 'ML-based evaluation of prompt clarity and instruction specificity using fine-tuned DistilBERT',
             'grammar': 'Grammar and syntax validation using fine-tuned language model trained on Jfleg dataset',
@@ -215,6 +216,7 @@ class ComponentDetailPanel {
     getComponentTypeLabel(type) {
         const labels = {
             'bastion': 'SSH Gateway',
+            'webapp': 'Web Application',
             'orchestrator': 'API Gateway', 
             'ml-expert': 'ML Service',
             'non-ml-expert': 'Data Service'
@@ -419,6 +421,38 @@ class ComponentDetailPanel {
     }
     
     getCodeSnippet(component) {
+        if (component.id === 'webapp') {
+            return `# Web Application Configuration
+FLASK_APP = 'frizzles_app.py'
+FLASK_ENV = 'production'
+HOST = '0.0.0.0'
+PORT = 8080
+
+# API Configuration
+ORCHESTRATOR_URL = 'http://172.31.48.224:8000'
+API_TIMEOUT = 45  # seconds
+MAX_RETRIES = 3
+
+# Security Configuration
+CORS_ORIGINS = ['*']  # Public internet access
+SSL_CERT_PATH = '/etc/ssl/certs/frizzles.crt'
+SSL_KEY_PATH = '/etc/ssl/private/frizzles.key'
+
+@app.route('/api/evaluate', methods=['POST'])
+def evaluate_prompt():
+    prompt = request.json.get('prompt')
+    
+    try:
+        response = requests.post(
+            f'{ORCHESTRATOR_URL}/evaluate',
+            json={'prompt': prompt},
+            timeout=API_TIMEOUT
+        )
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': str(e)}), 500`;
+        }
+        
         if (component.id === 'orchestrator') {
             return `# Central Orchestrator Configuration
 EXPERT_TIMEOUT = 30  # seconds per expert
@@ -543,7 +577,8 @@ def evaluate(prompt):
     }
     
     getSSHConfig(component) {
-        const hostName = component.id === 'orchestrator' ? 'orchestrator' : 
+        const hostName = component.id === 'webapp' ? 'frizzles-webapp' :
+                        component.id === 'orchestrator' ? 'orchestrator' : 
                         component.id === 'clarity' ? 'clarity-expert' :
                         component.id === 'grammar' ? 'grammar-expert' :
                         component.id === 'documentation' ? 'documentation-expert' :

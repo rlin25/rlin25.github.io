@@ -197,7 +197,12 @@ class InfrastructureVisualization {
         // Instance positioning - adaptive based on layout
         this.positions.instances = {
             bastion: {
-                x: this.positions.subnets.public.x + subnetWidth/2,
+                x: this.positions.subnets.public.x + (this.isVerticalLayout ? subnetWidth/3 : subnetWidth/3),
+                y: this.positions.subnets.public.y + subnetHeight/2 + 5,
+                subnet: 'public'
+            },
+            webapp: {
+                x: this.positions.subnets.public.x + (this.isVerticalLayout ? 2*subnetWidth/3 : 2*subnetWidth/3),
                 y: this.positions.subnets.public.y + subnetHeight/2 + 5,
                 subnet: 'public'
             },
@@ -487,6 +492,7 @@ class InfrastructureVisualization {
     getInstanceIcon(type) {
         const icons = {
             'bastion': 'SSH',
+            'webapp': 'WEB',
             'orchestrator': 'API',
             'ml-expert': 'ML',
             'non-ml-expert': 'SVC'
