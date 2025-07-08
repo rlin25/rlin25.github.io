@@ -122,6 +122,7 @@ class InfrastructureVisualization {
     }
     
     calculatePositions() {
+        console.log('calculatePositions called, placedNodes length:', this.placedNodes ? this.placedNodes.length : 'undefined');
         this.positions = {};
         
         // Calculate scaling factors based on current dimensions
@@ -139,6 +140,7 @@ class InfrastructureVisualization {
         // Initialize collision detection arrays
         this.placedNodes = [];
         this.minNodeDistance = this.nodeRadius * 4; // Minimum distance between node centers (increased for better separation)
+        console.log('Collision detection initialized - minNodeDistance:', this.minNodeDistance, 'nodeRadius:', this.nodeRadius);
         
         // VPC boundary
         this.positions.vpc = {
