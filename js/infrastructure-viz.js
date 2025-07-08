@@ -136,6 +136,10 @@ class InfrastructureVisualization {
             this.fontSize[key] = Math.max(8, value * this.scaleFactor);
         }
         
+        // Initialize collision detection arrays
+        this.placedNodes = [];
+        this.minNodeDistance = this.nodeRadius * 2.5; // Minimum distance between node centers
+        
         // VPC boundary
         this.positions.vpc = {
             x: this.margin.left,
@@ -195,25 +199,43 @@ class InfrastructureVisualization {
         }
         
         // Instance positioning - adaptive based on layout
-        this.positions.instances = {
-            bastion: {
-                x: this.positions.subnets.public.x + (this.isVerticalLayout ? subnetWidth/3 : subnetWidth/3),
-                y: this.positions.subnets.public.y + subnetHeight/2 + 5,
-                subnet: 'public'
-            },
-            webapp: {
-                x: this.positions.subnets.public.x + (this.isVerticalLayout ? 2*subnetWidth/3 : 2*subnetWidth/3),
-                y: this.positions.subnets.public.y + subnetHeight/2 + 5,
-                subnet: 'public'
-            },
-            orchestrator: {
-                x: this.positions.subnets.private.x + subnetWidth/2 + (this.isVerticalLayout ? 0 : 30),
-                y: this.positions.subnets.private.y + (this.isVerticalLayout ? 60 : 60 + 10 + 5),
-                subnet: 'private'
-            }
+        this.positions.instances = {};
+        
+        // Position fixed instances with collision detection
+        const bastionPreferred = {
+            x: this.positions.subnets.public.x + (this.isVerticalLayout ? subnetWidth/3 : subnetWidth/3),
+            y: this.positions.subnets.public.y + subnetHeight/2 + 5,
+            subnet: 'public'
         };
         
-        // Position ML experts in a grid - adjust for layout
+        const webappPreferred = {
+            x: this.positions.subnets.public.x + (this.isVerticalLayout ? 2*subnetWidth/3 : 2*subnetWidth/3),
+            y: this.positions.subnets.public.y + subnetHeight/2 + 5,
+            subnet: 'public'
+        };
+        
+        const orchestratorPreferred = {
+            x: this.positions.subnets.private.x + subnetWidth/2 + (this.isVerticalLayout ? 0 : 30),
+            y: this.positions.subnets.private.y + (this.isVerticalLayout ? 60 : 60 + 10 + 5),
+            subnet: 'private'
+        };
+        
+        this.positions.instances.bastion = this.findNonOverlappingPosition(
+            bastionPreferred, 
+            this.positions.subnets.public
+        );
+        
+        this.positions.instances.webapp = this.findNonOverlappingPosition(
+            webappPreferred, 
+            this.positions.subnets.public
+        );
+        
+        this.positions.instances.orchestrator = this.findNonOverlappingPosition(
+            orchestratorPreferred, 
+            this.positions.subnets.private
+        );
+        
+        // Position ML experts in a grid with collision detection
         let expertCols, expertRows, expertSpacing, startX, startY;
         
         if (this.isVerticalLayout) {
@@ -236,41 +258,133 @@ class InfrastructureVisualization {
             const col = i % expertCols;
             const row = Math.floor(i / expertCols);
             
-            this.positions.instances[expert] = {
+            const preferredPos = {
                 x: startX + col * expertSpacing.x,
                 y: startY + row * expertSpacing.y,
                 subnet: 'private'
             };
+            
+            // Find non-overlapping position
+            this.positions.instances[expert] = this.findNonOverlappingPosition(
+                preferredPos, 
+                this.positions.subnets.private
+            );
         });
         
-        // Position non-ML experts - adjust for layout
+        // Position non-ML experts with collision detection
         if (this.isVerticalLayout) {
             // Vertical layout - position at bottom of private subnet
-            this.positions.instances.tooling = {
+            const toolingPreferred = {
                 x: this.positions.subnets.private.x + 60,
                 y: this.positions.subnets.private.y + subnetHeight - 60,
                 subnet: 'private'
             };
             
-            this.positions.instances.repetition = {
+            const repetitionPreferred = {
                 x: this.positions.subnets.private.x + subnetWidth - 60,
                 y: this.positions.subnets.private.y + subnetHeight - 60,
                 subnet: 'private'
             };
+            
+            this.positions.instances.tooling = this.findNonOverlappingPosition(
+                toolingPreferred, 
+                this.positions.subnets.private
+            );
+            
+            this.positions.instances.repetition = this.findNonOverlappingPosition(
+                repetitionPreferred, 
+                this.positions.subnets.private
+            );
         } else {
             // Horizontal layout - original positions
-            this.positions.instances.tooling = {
+            const toolingPreferred = {
                 x: this.positions.subnets.private.x + 50,
                 y: this.positions.subnets.private.y + subnetHeight - 80 + 5,
                 subnet: 'private'
             };
             
-            this.positions.instances.repetition = {
+            const repetitionPreferred = {
                 x: this.positions.subnets.private.x + subnetWidth - 80,
                 y: this.positions.subnets.private.y + subnetHeight - 80 + 5,
                 subnet: 'private'
             };
+            
+            this.positions.instances.tooling = this.findNonOverlappingPosition(
+                toolingPreferred, 
+                this.positions.subnets.private
+            );
+            
+            this.positions.instances.repetition = this.findNonOverlappingPosition(
+                repetitionPreferred, 
+                this.positions.subnets.private
+            );
         }
+    }
+    
+    // Collision detection methods
+    checkCollision(pos1, pos2) {
+        const dx = pos1.x - pos2.x;
+        const dy = pos1.y - pos2.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < this.minNodeDistance;
+    }
+    
+    checkCollisionWithPlaced(position) {
+        return this.placedNodes.some(placedPos => this.checkCollision(position, placedPos));
+    }
+    
+    findNonOverlappingPosition(preferredPos, subnetBounds) {
+        // First check if preferred position is collision-free
+        if (!this.checkCollisionWithPlaced(preferredPos)) {
+            this.placedNodes.push(preferredPos);
+            return preferredPos;
+        }
+        
+        // If collision detected, find alternative position using spiral pattern
+        const maxAttempts = 100;
+        const padding = 40 * this.scaleFactor;
+        const minX = subnetBounds.x + padding + this.nodeRadius;
+        const maxX = subnetBounds.x + subnetBounds.width - padding - this.nodeRadius;
+        const minY = subnetBounds.y + padding + this.nodeRadius;
+        const maxY = subnetBounds.y + subnetBounds.height - padding - this.nodeRadius;
+        
+        // Try spiral pattern around preferred position
+        for (let radius = this.minNodeDistance; radius <= Math.min(subnetBounds.width, subnetBounds.height) / 2; radius += this.minNodeDistance / 2) {
+            for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 8) {
+                const candidate = {
+                    x: Math.max(minX, Math.min(maxX, preferredPos.x + radius * Math.cos(angle))),
+                    y: Math.max(minY, Math.min(maxY, preferredPos.y + radius * Math.sin(angle))),
+                    subnet: preferredPos.subnet
+                };
+                
+                // Check if candidate position is within bounds and collision-free
+                if (candidate.x >= minX && candidate.x <= maxX && 
+                    candidate.y >= minY && candidate.y <= maxY && 
+                    !this.checkCollisionWithPlaced(candidate)) {
+                    this.placedNodes.push(candidate);
+                    return candidate;
+                }
+            }
+        }
+        
+        // If spiral search fails, try random positions as fallback
+        for (let i = 0; i < maxAttempts; i++) {
+            const candidate = {
+                x: minX + Math.random() * (maxX - minX),
+                y: minY + Math.random() * (maxY - minY),
+                subnet: preferredPos.subnet
+            };
+            
+            if (!this.checkCollisionWithPlaced(candidate)) {
+                this.placedNodes.push(candidate);
+                return candidate;
+            }
+        }
+        
+        // Last resort: return preferred position even if it overlaps (with warning)
+        console.warn('Could not find non-overlapping position, using preferred position');
+        this.placedNodes.push(preferredPos);
+        return preferredPos;
     }
     
     renderVisualization() {
@@ -458,11 +572,14 @@ class InfrastructureVisualization {
             const pos = this.positions.instances[instance.id];
             if (!pos) return;
             
+            // Calculate label positions with collision avoidance
+            const labelPositions = this.calculateLabelPositions(pos, instance);
+            
             // Instance name
             this.layers.labels.append('text')
                 .attr('id', `label-name-${instance.id}`)
-                .attr('x', pos.x)
-                .attr('y', pos.y + this.nodeRadius + 15)
+                .attr('x', labelPositions.name.x)
+                .attr('y', labelPositions.name.y)
                 .attr('class', 'instance-label')
                 .style('text-anchor', 'middle')
                 .style('font-family', 'Inter, sans-serif')
@@ -476,8 +593,8 @@ class InfrastructureVisualization {
             if (instance.port) {
                 this.layers.labels.append('text')
                     .attr('id', `label-port-${instance.id}`)
-                    .attr('x', pos.x)
-                    .attr('y', pos.y + this.nodeRadius + 27)
+                    .attr('x', labelPositions.port.x)
+                    .attr('y', labelPositions.port.y)
                     .attr('class', 'port-label')
                     .style('text-anchor', 'middle')
                     .style('font-family', 'Consolas, monospace')
@@ -490,8 +607,8 @@ class InfrastructureVisualization {
             // Private IP
             this.layers.labels.append('text')
                 .attr('id', `label-ip-${instance.id}`)
-                .attr('x', pos.x)
-                .attr('y', pos.y + this.nodeRadius + (instance.port ? 39 : 27))
+                .attr('x', labelPositions.ip.x)
+                .attr('y', labelPositions.ip.y)
                 .attr('class', 'ip-label')
                 .style('text-anchor', 'middle')
                 .style('font-family', 'Consolas, monospace')
@@ -499,6 +616,103 @@ class InfrastructureVisualization {
                 .style('fill', '#888')
                 .style('text-shadow', '1px 1px 2px rgba(255,255,255,0.8), -1px -1px 2px rgba(255,255,255,0.8), 1px -1px 2px rgba(255,255,255,0.8), -1px 1px 2px rgba(255,255,255,0.8)')
                 .text(instance.privateIp || instance.publicIp);
+        });
+    }
+    
+    calculateLabelPositions(nodePos, instance) {
+        const baseOffset = 15;
+        const lineHeight = 12;
+        
+        // Default positions (below node)
+        let positions = {
+            name: {
+                x: nodePos.x,
+                y: nodePos.y + this.nodeRadius + baseOffset
+            },
+            port: {
+                x: nodePos.x,
+                y: nodePos.y + this.nodeRadius + baseOffset + lineHeight
+            },
+            ip: {
+                x: nodePos.x,
+                y: nodePos.y + this.nodeRadius + baseOffset + (instance.port ? lineHeight * 2 : lineHeight)
+            }
+        };
+        
+        // Check if labels would overlap with other nodes
+        const labelBounds = this.getLabelBounds(positions, instance);
+        
+        // If there's overlap, try alternative positions
+        if (this.checkLabelOverlap(labelBounds)) {
+            // Try positioning above the node
+            positions.name.y = nodePos.y - this.nodeRadius - baseOffset;
+            positions.port.y = nodePos.y - this.nodeRadius - baseOffset - lineHeight;
+            positions.ip.y = nodePos.y - this.nodeRadius - baseOffset - (instance.port ? lineHeight * 2 : lineHeight);
+            
+            const newLabelBounds = this.getLabelBounds(positions, instance);
+            
+            // If still overlapping, try to the right
+            if (this.checkLabelOverlap(newLabelBounds)) {
+                positions.name.x = nodePos.x + this.nodeRadius + 20;
+                positions.name.y = nodePos.y - (instance.port ? lineHeight : lineHeight/2);
+                positions.port.x = nodePos.x + this.nodeRadius + 20;
+                positions.port.y = nodePos.y;
+                positions.ip.x = nodePos.x + this.nodeRadius + 20;
+                positions.ip.y = nodePos.y + lineHeight;
+            }
+        }
+        
+        return positions;
+    }
+    
+    getLabelBounds(positions, instance) {
+        const textWidth = 60; // Approximate text width
+        const textHeight = 12; // Approximate text height
+        
+        let bounds = [
+            {
+                x: positions.name.x - textWidth/2,
+                y: positions.name.y - textHeight/2,
+                width: textWidth,
+                height: textHeight
+            }
+        ];
+        
+        if (instance.port) {
+            bounds.push({
+                x: positions.port.x - textWidth/2,
+                y: positions.port.y - textHeight/2,
+                width: textWidth,
+                height: textHeight
+            });
+        }
+        
+        bounds.push({
+            x: positions.ip.x - textWidth/2,
+            y: positions.ip.y - textHeight/2,
+            width: textWidth,
+            height: textHeight
+        });
+        
+        return bounds;
+    }
+    
+    checkLabelOverlap(labelBounds) {
+        return labelBounds.some(labelBound => {
+            return this.placedNodes.some(node => {
+                const nodeLeft = node.x - this.nodeRadius;
+                const nodeRight = node.x + this.nodeRadius;
+                const nodeTop = node.y - this.nodeRadius;
+                const nodeBottom = node.y + this.nodeRadius;
+                
+                const labelLeft = labelBound.x;
+                const labelRight = labelBound.x + labelBound.width;
+                const labelTop = labelBound.y;
+                const labelBottom = labelBound.y + labelBound.height;
+                
+                return !(labelRight < nodeLeft || labelLeft > nodeRight || 
+                        labelBottom < nodeTop || labelTop > nodeBottom);
+            });
         });
     }
     
@@ -605,22 +819,25 @@ class InfrastructureVisualization {
         const instance = this.data.instances.find(i => i.id === instanceId);
         if (!instance) return;
         
+        // Calculate new label positions with collision avoidance
+        const labelPositions = this.calculateLabelPositions({x: newX, y: newY}, instance);
+        
         // Update instance name label
         d3.select(`#label-name-${instanceId}`)
-            .attr('x', newX)
-            .attr('y', newY + this.nodeRadius + 15);
+            .attr('x', labelPositions.name.x)
+            .attr('y', labelPositions.name.y);
         
         // Update port label if it exists
         if (instance.port) {
             d3.select(`#label-port-${instanceId}`)
-                .attr('x', newX)
-                .attr('y', newY + this.nodeRadius + 27);
+                .attr('x', labelPositions.port.x)
+                .attr('y', labelPositions.port.y);
         }
         
         // Update IP label
         d3.select(`#label-ip-${instanceId}`)
-            .attr('x', newX)
-            .attr('y', newY + this.nodeRadius + (instance.port ? 39 : 27));
+            .attr('x', labelPositions.ip.x)
+            .attr('y', labelPositions.ip.y);
     }
     
     updateSecurityGroups() {
@@ -805,28 +1022,30 @@ class InfrastructureVisualization {
                         .style('font-size', `${this.fontSize.instanceIcon}px`);
                 }
                 
-                // Update labels with responsive sizing
+                // Update labels with responsive sizing and collision avoidance
+                const labelPositions = this.calculateLabelPositions(pos, instance);
+                
                 const nameLabel = d3.select(`#label-name-${instance.id}`);
                 if (!nameLabel.empty()) {
                     nameLabel
-                        .attr('x', pos.x)
-                        .attr('y', pos.y + this.nodeRadius + 15)
+                        .attr('x', labelPositions.name.x)
+                        .attr('y', labelPositions.name.y)
                         .style('font-size', `${this.fontSize.instanceLabel}px`);
                 }
                 
                 const portLabel = d3.select(`#label-port-${instance.id}`);
                 if (!portLabel.empty()) {
                     portLabel
-                        .attr('x', pos.x)
-                        .attr('y', pos.y + this.nodeRadius + 27)
+                        .attr('x', labelPositions.port.x)
+                        .attr('y', labelPositions.port.y)
                         .style('font-size', `${this.fontSize.portLabel}px`);
                 }
                 
                 const ipLabel = d3.select(`#label-ip-${instance.id}`);
                 if (!ipLabel.empty()) {
                     ipLabel
-                        .attr('x', pos.x)
-                        .attr('y', pos.y + this.nodeRadius + (instance.port ? 39 : 27))
+                        .attr('x', labelPositions.ip.x)
+                        .attr('y', labelPositions.ip.y)
                         .style('font-size', `${this.fontSize.ipLabel}px`);
                 }
             }
