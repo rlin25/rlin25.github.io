@@ -195,7 +195,7 @@ class ComponentDetailPanel {
     getComponentPurpose(component) {
         const purposes = {
             'bastion': 'Secure SSH gateway providing controlled access to private subnet resources through ProxyJump configuration',
-            'webapp': 'Public-facing web application serving the FrizzlesRubric interface with direct API access to the orchestrator',
+            'webapp': 'Public-facing web application serving the Frizzle\'s Rubric interface with direct API access to the orchestrator',
             'orchestrator': 'Central API coordinator managing async requests across all 7 evaluation experts with timeout handling',
             'clarity': 'ML-based evaluation of prompt clarity and instruction specificity using fine-tuned DistilBERT',
             'grammar': 'Grammar and syntax validation using fine-tuned language model trained on Jfleg dataset',

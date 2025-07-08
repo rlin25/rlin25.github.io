@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; text-align: center;">
                     <div>
                         <h3>Infrastructure Visualization</h3>
-                        <p>FrizzlesRubric Distributed AI System</p>
+                        <p>Frizzle's Rubric Distributed AI System</p>
                         <p style="font-size: 0.9rem; margin-top: 1rem;">
                             Interactive diagram showing 7 evaluation experts across secure VPC infrastructure
                         </p>

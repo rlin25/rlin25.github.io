@@ -1,4 +1,4 @@
-// Infrastructure data based on actual FrizzlesRubric deployment
+// Infrastructure data based on actual Frizzle's Rubric deployment
 const infrastructureData = {
   vpc: { 
     cidr: "172.31.0.0/16", 
@@ -6,13 +6,13 @@ const infrastructureData = {
     subnets: [
       { 
         id: "subnet-public", 
-        cidr: "172.31.48.0/20", 
+        cidr: "172.31.49.0/24", 
         type: "public",
         name: "Public Subnet"
       },
       { 
         id: "subnet-private-1", 
-        cidr: "172.31.48.0/20", 
+        cidr: "172.31.48.0/24", 
         type: "private",
         name: "Private Subnet (Main)"
       },
@@ -43,7 +43,7 @@ const infrastructureData = {
       name: "Web Application",
       type: "webapp", 
       subnet: "public", 
-      color: "#2196f3",
+      color: "#f48fb1",
       publicIp: "18.189.35.55",
       privateIp: "172.31.24.xxx",
       securityGroup: "sg-webapp-public",
@@ -138,7 +138,7 @@ const infrastructureData = {
       type: "non-ml-expert", 
       subnet: "private", 
       port: 8008, 
-      color: "#1976d2",
+      color: "#42a5f5",
       privateIp: "172.31.48.208",
       securityGroup: "sg-private",
       keyFile: "frizzlesrubric-key-6.pem",
@@ -152,7 +152,7 @@ const infrastructureData = {
       type: "non-ml-expert", 
       subnet: "private-2",
       port: 8009, 
-      color: "#00796b",
+      color: "#5c6bc0",
       privateIp: "172.31.24.150",
       securityGroup: "sg-private",
       keyFile: "frizzlesrubric-key-9.pem",
