@@ -138,7 +138,7 @@ class InfrastructureVisualization {
         
         // Initialize collision detection arrays
         this.placedNodes = [];
-        this.minNodeDistance = this.nodeRadius * 2.5; // Minimum distance between node centers
+        this.minNodeDistance = this.nodeRadius * 4; // Minimum distance between node centers (increased for better separation)
         
         // VPC boundary
         this.positions.vpc = {
@@ -239,18 +239,24 @@ class InfrastructureVisualization {
         let expertCols, expertRows, expertSpacing, startX, startY;
         
         if (this.isVerticalLayout) {
-            // Vertical layout - more compact grid
+            // Vertical layout - spacing based on node distance
             expertCols = 3;
             expertRows = 2;
-            expertSpacing = { x: subnetWidth/4, y: subnetHeight/3.5 };
-            startX = this.positions.subnets.private.x + 40;
+            expertSpacing = { 
+                x: Math.max(this.minNodeDistance * 1.2, subnetWidth/4), 
+                y: Math.max(this.minNodeDistance * 1.2, subnetHeight/3.5) 
+            };
+            startX = this.positions.subnets.private.x + 60;
             startY = this.positions.subnets.private.y + 120;
         } else {
-            // Horizontal layout - original spacing
+            // Horizontal layout - spacing based on node distance
             expertCols = 3;
             expertRows = 2;
-            expertSpacing = { x: subnetWidth/4, y: subnetHeight/4 };
-            startX = this.positions.subnets.private.x + 40;
+            expertSpacing = { 
+                x: Math.max(this.minNodeDistance * 1.2, subnetWidth/4), 
+                y: Math.max(this.minNodeDistance * 1.2, subnetHeight/4) 
+            };
+            startX = this.positions.subnets.private.x + 60;
             startY = this.positions.subnets.private.y + 150 + 5;
         }
         
@@ -337,20 +343,24 @@ class InfrastructureVisualization {
         // First check if preferred position is collision-free
         if (!this.checkCollisionWithPlaced(preferredPos)) {
             this.placedNodes.push(preferredPos);
+            console.log('✓ Preferred position accepted:', preferredPos);
             return preferredPos;
         }
         
+        console.log('✗ Collision detected for preferred position:', preferredPos, 'Searching for alternative...');
+        
         // If collision detected, find alternative position using spiral pattern
         const maxAttempts = 100;
-        const padding = 40 * this.scaleFactor;
+        const padding = Math.max(60, 60 * this.scaleFactor); // Increased padding
         const minX = subnetBounds.x + padding + this.nodeRadius;
         const maxX = subnetBounds.x + subnetBounds.width - padding - this.nodeRadius;
         const minY = subnetBounds.y + padding + this.nodeRadius;
         const maxY = subnetBounds.y + subnetBounds.height - padding - this.nodeRadius;
         
-        // Try spiral pattern around preferred position
-        for (let radius = this.minNodeDistance; radius <= Math.min(subnetBounds.width, subnetBounds.height) / 2; radius += this.minNodeDistance / 2) {
-            for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 8) {
+        // Try spiral pattern around preferred position with larger increments
+        const maxRadius = Math.min(subnetBounds.width, subnetBounds.height) / 3;
+        for (let radius = this.minNodeDistance; radius <= maxRadius; radius += this.minNodeDistance * 0.75) {
+            for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 6) { // Fewer angle steps for faster search
                 const candidate = {
                     x: Math.max(minX, Math.min(maxX, preferredPos.x + radius * Math.cos(angle))),
                     y: Math.max(minY, Math.min(maxY, preferredPos.y + radius * Math.sin(angle))),
@@ -362,12 +372,31 @@ class InfrastructureVisualization {
                     candidate.y >= minY && candidate.y <= maxY && 
                     !this.checkCollisionWithPlaced(candidate)) {
                     this.placedNodes.push(candidate);
+                    console.log('✓ Alternative position found (spiral):', candidate);
                     return candidate;
                 }
             }
         }
         
-        // If spiral search fails, try random positions as fallback
+        // If spiral search fails, try grid-based search
+        const gridStep = this.minNodeDistance * 0.8;
+        for (let x = minX; x <= maxX; x += gridStep) {
+            for (let y = minY; y <= maxY; y += gridStep) {
+                const candidate = {
+                    x: x,
+                    y: y,
+                    subnet: preferredPos.subnet
+                };
+                
+                if (!this.checkCollisionWithPlaced(candidate)) {
+                    this.placedNodes.push(candidate);
+                    console.log('✓ Alternative position found (grid):', candidate);
+                    return candidate;
+                }
+            }
+        }
+        
+        // If grid search fails, try random positions as fallback
         for (let i = 0; i < maxAttempts; i++) {
             const candidate = {
                 x: minX + Math.random() * (maxX - minX),
@@ -382,7 +411,7 @@ class InfrastructureVisualization {
         }
         
         // Last resort: return preferred position even if it overlaps (with warning)
-        console.warn('Could not find non-overlapping position, using preferred position');
+        console.warn('Could not find non-overlapping position for', preferredPos, 'using preferred position');
         this.placedNodes.push(preferredPos);
         return preferredPos;
     }
